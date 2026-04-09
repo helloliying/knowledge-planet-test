@@ -416,39 +416,34 @@
         }
         
         function clearData() {
-            if (confirm('确定要清空当前显示的轨迹数据吗？\n\n注意：这只是清除显示，数据采集和自动刷新会继续工作。')) {
-                // 1. 清除显示数据（但不停止自动刷新）
+            if (confirm("确定要清空当前显示的轨迹数据吗？\n\n注意：这只是清除安全仪表板的显示，主测试页面会继续采集新数据。")) {
+                // 只清除安全仪表板的显示，不影响主测试页面
                 if (window.TrajectoryDisplay) {
-                    // 只清除显示，不停止刷新
-                    const clearFunc = window.TrajectoryDisplay.clear || 
-                                    (window.TrajectoryDisplay.clearDisplay || function() {});
-                    clearFunc.call(window.TrajectoryDisplay);
+                    // 清除图表显示
+                    if (window.TrajectoryDisplay.clear) {
+                        window.TrajectoryDisplay.clear();
+                    }
                 }
                 
-                // 2. 简单清除共享数据键（可选，不影响主测试页面）
-                try {
-                    localStorage.removeItem('ks_shared_trajectory_data');
-                } catch (error) {
-                    // 忽略错误
-                }
+                // 不清除共享数据键，让主测试页面继续工作
                 
-                // 3. 更新UI显示
-                const statsElement = document.getElementById('trajectory-stats');
+                // 更新UI显示
+                const statsElement = document.getElementById("trajectory-stats");
                 if (statsElement) {
                     statsElement.innerHTML = `
                         <div class="no-data-message">
                             <div class="icon">🔄</div>
                             <p><strong>显示数据已清空</strong></p>
-                            <p>自动刷新继续工作中...</p>
-                            <p>请访问主测试页面生成新数据</p>
+                            <p>等待主测试页面生成新数据...</p>
+                            <p>请访问主测试页面并移动鼠标</p>
                         </div>
                     `;
                 }
                 
-                // 4. 显示简单消息
-                alert('🔄 显示数据已清空\n\n自动刷新继续工作，等待新数据...');
+                // 显示简单消息
+                alert("🔄 安全仪表板显示已清空\n\n主测试页面继续采集数据中...\n\n请返回主测试页面移动鼠标生成新数据");
                 
-                console.log('显示数据已清空，自动刷新继续');
+                console.log("安全仪表板显示已清空，主测试页面继续工作");
             }
         }
         

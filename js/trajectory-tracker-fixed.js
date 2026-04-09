@@ -1,8 +1,6 @@
 /**
- * 简化版用户行为轨迹跟踪器
- * 专门记录 mousemove, mousedown, scroll 事件
- * 数据存储在localStorage中，可供其他页面访问
- * 注意：没有清空数据检测机制
+ * 修复版用户行为轨迹跟踪器
+ * 完全独立工作，不受其他页面清空操作影响
  */
 
 (function() {
@@ -13,16 +11,16 @@
         // 是否启用跟踪
         enabled: true,
         
-        // 采样间隔（毫秒），避免过于频繁
+        // 采样间隔（毫秒）
         sampleInterval: 50,
         
         // 最大记录数
         maxRecords: 1000,
         
-        // 存储键名
-        storageKey: 'ks_trajectory_data',
+        // 存储键名（使用页面特定的键，避免冲突）
+        storageKey: 'ks_trajectory_data_' + window.location.pathname.replace(/\//g, '_'),
         
-        // 共享数据键名（供其他页面访问）
+        // 共享数据键名（固定键，供安全仪表板读取）
         sharedDataKey: 'ks_shared_trajectory_data',
         
         // 自动保存间隔（毫秒）
@@ -45,31 +43,40 @@
     let trajectoryData = [];
     let lastSampleTime = 0;
     let saveTimer = null;
+    let isInitialized = false;
     
     /**
      * 初始化轨迹跟踪器
      */
     function initTracker() {
+        if (isInitialized) {
+            console.log('轨迹跟踪器已初始化，跳过');
+            return;
+        }
+        
         if (!TRACKER_CONFIG.enabled) {
             console.log('轨迹跟踪器已禁用');
             return;
         }
         
-        console.log('🚀 简化版轨迹跟踪器初始化');
+        console.log('🚀 修复版轨迹跟踪器初始化');
         
         // 加载之前保存的数据
         loadSavedData();
-        
-        // 清理过期数据
-        cleanupOldData();
         
         // 设置事件监听器
         setupEventListeners();
         
         // 启动自动保存
+
         startAutoSave();
         
-        console.log('✅ 简化版轨迹跟踪器已启动');
+        // 初始共享数据更新
+
+        updateSharedData();
+        
+        isInitialized = true;
+        console.log('✅ 修复版轨迹跟踪器已启动');
     }
     
     /**
@@ -81,34 +88,16 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 // 只保留未过期的数据
+
                 const now = Date.now();
                 trajectoryData = parsed.filter(record => 
                     now - record.t < TRACKER_CONFIG.dataRetentionTime
                 );
                 console.log(`📥 加载了 ${trajectoryData.length} 条轨迹数据`);
-                
-                // 更新共享数据
-                updateSharedData();
             }
         } catch (error) {
             console.error('加载轨迹数据失败:', error);
             trajectoryData = [];
-        }
-    }
-    
-    /**
-     * 清理过期数据
-     */
-    function cleanupOldData() {
-        const now = Date.now();
-        const oldLength = trajectoryData.length;
-        trajectoryData = trajectoryData.filter(record => 
-            now - record.t < TRACKER_CONFIG.dataRetentionTime
-        );
-        
-        if (oldLength > trajectoryData.length) {
-            console.log(`🧹 清理了 ${oldLength - trajectoryData.length} 条过期数据`);
-            saveData();
         }
     }
     
@@ -129,9 +118,11 @@
         }
         
         // 页面卸载前保存数据
+
         window.addEventListener('beforeunload', handleBeforeUnload);
         
-        // 定期清理
+        // 定期清理过期数据
+
         setInterval(cleanupOldData, TRACKER_CONFIG.dataRetentionTime / 2);
     }
     
@@ -200,16 +191,34 @@
         trajectoryData.push(record);
         
         // 限制最大记录数
+
         if (trajectoryData.length > TRACKER_CONFIG.maxRecords) {
             trajectoryData = trajectoryData.slice(-TRACKER_CONFIG.maxRecords);
         }
         
-        // 更新共享数据
+        // 立即更新共享数据
+
         updateSharedData();
     }
     
     /**
-     * 更新共享数据（供其他页面访问）
+     * 清理过期数据
+     */
+    function cleanupOldData() {
+        const now = Date.now();
+        const oldLength = trajectoryData.length;
+        trajectoryData = trajectoryData.filter(record => 
+            now - record.t < TRACKER_CONFIG.dataRetentionTime
+        );
+        
+        if (oldLength > trajectoryData.length) {
+            console.log(`🧹 清理了 ${oldLength - trajectoryData.length} 条过期数据`);
+            saveData();
+        }
+    }
+    
+    /**
+     * 更新共享数据
      */
     function updateSharedData() {
         try {
@@ -217,7 +226,7 @@
                 // 基本统计
                 stats: getStats(),
                 
-                // 最近100个轨迹点（用于实时显示）
+                // 最近100个轨迹点
                 recentPoints: getTrajectoryStream().slice(-100),
                 
                 // 完整数据摘要
@@ -225,11 +234,20 @@
                     totalPoints: trajectoryData.length,
                     lastUpdated: new Date().toISOString(),
                     sessionId: getSessionId(),
-                    pageUrl: window.location.href
+                    pageUrl: window.location.href,
+                    pageSpecificKey: TRACKER_CONFIG.storageKey
                 },
                 
                 // 时间戳
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                
+                // 跟踪器状态
+                trackerStatus: {
+                    isInitialized: isInitialized,
+                    enabled: TRACKER_CONFIG.enabled,
+                    dataCount: trajectoryData.length,
+                    lastUpdate: new Date().toISOString()
+                }
             };
             
             localStorage.setItem(TRACKER_CONFIG.sharedDataKey, JSON.stringify(sharedData));
@@ -258,6 +276,7 @@
         try {
             localStorage.setItem(TRACKER_CONFIG.storageKey, JSON.stringify(trajectoryData));
             // 同时更新共享数据
+
             updateSharedData();
         } catch (error) {
             console.error('保存轨迹数据失败:', error);
@@ -285,8 +304,6 @@
     
     /**
      * 获取轨迹数据流
-     * @param {number} limit - 限制返回的记录数
-     * @returns {Array} 轨迹流数据
      */
     function getTrajectoryStream(limit = null) {
         const stream = trajectoryData
@@ -320,70 +337,34 @@
             scrolls: scrolls.length,
             sessionDuration: Math.round(sessionDuration / 1000) + 's',
             currentPage: window.location.pathname,
-            lastUpdate: new Date().toISOString()
+            lastUpdate: new Date().toISOString(),
+            trackerStatus: isInitialized ? 'active' : 'inactive'
         };
     }
     
     /**
-     * 清空数据
+     * 清空数据（只清空当前页面的数据）
      */
     function clearData() {
-        console.log('清空轨迹数据...');
+        console.log('清空当前页面轨迹数据...');
         
         // 1. 清除内部数据
+
         trajectoryData = [];
         
-        // 2. 清除存储数据
+        // 2. 更新共享数据（显示为空）
 
-        localStorage.removeItem(TRACKER_CONFIG.storageKey);
-        localStorage.removeItem(TRACKER_CONFIG.sharedDataKey);
+        updateSharedData();
         
-        // 3. 立即初始化一个新的共享数据结构
+        console.log('当前页面轨迹数据已清空');
+        
+        // 3. 确保事件监听器继续工作
 
-        const initialSharedData = {
-            stats: getStats(),
-            recentPoints: [],
-            summary: {
-                totalPoints: 0,
-                lastUpdated: new Date().toISOString(),
-                sessionId: getSessionId(),
-                pageUrl: window.location.href
-            },
-            timestamp: Date.now()
-        };
-        
-        localStorage.setItem(TRACKER_CONFIG.sharedDataKey, JSON.stringify(initialSharedData));
-        
-        console.log('轨迹数据已清空，共享数据已重新初始化');
-        
-        // 4. 确保事件监听器正常工作
-
-        setTimeout(() => {
-            console.log('清空后状态检查:', {
-                内部数据长度: trajectoryData.length,
-                共享数据存在: !!localStorage.getItem(TRACKER_CONFIG.sharedDataKey),
-                事件监听器: '已重置'
-            });
-        }, 100);
+        console.log('事件监听器保持活动状态');
     }
     
     /**
-     * 导出数据为JSON
-     */
-    function exportData() {
-        return JSON.stringify({
-            metadata: {
-                exportedAt: new Date().toISOString(),
-                page: window.location.href,
-                stats: getStats(),
-                sessionId: getSessionId()
-            },
-            trajectory: getTrajectoryStream()
-        }, null, 2);
-    }
-    
-    /**
-     * 获取共享数据（供其他页面调用）
+     * 获取共享数据（供安全仪表板调用）
      */
     function getSharedData() {
         try {
@@ -396,14 +377,25 @@
     }
     
     // 导出公共API
-    window.TrajectoryTrackerSimple = {
+    window.TrajectoryTrackerFixed = {
         init: initTracker,
         getStream: getTrajectoryStream,
         getStats: getStats,
         getSharedData: getSharedData,
-        exportData: exportData,
         clearData: clearData,
-        config: TRACKER_CONFIG
+        config: TRACKER_CONFIG,
+        // 诊断函数
+
+        diagnose: function() {
+            return {
+                isInitialized: isInitialized,
+                dataCount: trajectoryData.length,
+                storageKey: TRACKER_CONFIG.storageKey,
+                sharedDataKey: TRACKER_CONFIG.sharedDataKey,
+                localStorageKeys: Array.from({length: localStorage.length}, (_, i) => localStorage.key(i)).filter(k => k.startsWith('ks_')),
+                sessionId: getSessionId()
+            };
+        }
     };
     
     // 自动初始化

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轨迹数据诊断</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background: #d4edda; border-color: #c3e6cb; }
+        .fail { background: #f8d7da; border-color: #f5c6cb; }
+        button { margin: 5px; padding: 8px 12px; }
+    </style>
+</head>
+<body>
+    <h1>轨迹数据诊断</h1>
+    
+    <div class="test" id="test-localstorage">
+        <h3>测试1: localStorage状态</h3>
+        <p id="ls-status">等待测试...</p>
+        <button onclick="testLocalStorage()">检查localStorage</button>
+        <div id="ls-data"></div>
+    </div>
+    
+    <div class="test" id="test-tracker">
+        <h3>测试2: 轨迹跟踪器状态</h3>
+        <p id="tracker-status">等待测试...</p>
+        <button onclick="testTracker()">检查跟踪器</button>
+        <div id="tracker-data"></div>
+    </div>
+    
+    <div class="test" id="test-shared">
+        <h3>测试3: 数据共享状态</h3>
+        <p id="shared-status">等待测试...</p>
+        <button onclick="testSharedData()">检查共享数据</button>
+        <div id="shared-data"></div>
+    </div>
+    
+    <div class="test" id="test-events">
+        <h3>测试4: 事件监听状态</h3>
+        <p id="events-status">等待测试...</p>
+        <button onclick="testEventListeners()">检查事件监听</button>
+        <div id="events-data"></div>
+    </div>
+    
+    <script>
+        // 测试1: localStorage状态
+        function testLocalStorage() {
+            const section = document.getElementById('test-localstorage');
+            const status = document.getElementById('ls-status');
+            const dataDiv = document.getElementById('ls-data');
+            
+            try {
+                const keys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('ks_')) {
+                        keys.push(key);
+                    }
+                }
+                
+                const data = {};
+                keys.forEach(key => {
+                    try {
+                        data[key] = JSON.parse(localStorage.getItem(key));
+                    } catch {
+                        data[key] = localStorage.getItem(key);
+                    }
+                });
+                
+                section.className = 'test pass';
+                status.innerHTML = `✅ 找到 ${keys.length} 个轨迹相关键`;
+                dataDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+            } catch (error) {
+                section.className = 'test fail';
+                status.innerHTML = `❌ localStorage测试失败: ${error.message}`;
+            }
+        }
+        
+        // 测试2: 轨迹跟踪器状态
+        function testTracker() {
+            const section = document.getElementById('test-tracker');
+            const status = document.getElementById('tracker-status');
+            const dataDiv = document.getElementById('tracker-data');
+            
+            try {
+                // 检查是否加载了跟踪器
+                if (!window.TrajectoryTrackerSimple) {
+                    // 尝试加载
+
+                    const script = document.createElement('script');
+                    script.src = './js/trajectory-tracker-simple.js';
+                    script.onload = function() {
+                        runTrackerTest();
+                    };
+                    script.onerror = function() {
+                        section.className = 'test fail';
+                        status.innerHTML = '❌ 无法加载轨迹跟踪器脚本';
+                    };
+                    document.head.appendChild(script);
+                    return;
+                }
+                
+                runTrackerTest();
+                
+                function runTrackerTest() {
+                    try {
+                        // 初始化跟踪器
+                        window.TrajectoryTrackerSimple.init();
+                        
+                        // 获取统计信息
+                        const stats = window.TrajectoryTrackerSimple.getStats();
+                        const sharedData = window.TrajectoryTrackerSimple.getSharedData();
+                        
+                        section.className = 'test pass';
+                        status.innerHTML = `✅ 轨迹跟踪器工作正常`;
+                        dataDiv.innerHTML = `
+                            <strong>统计信息:</strong><br>
+                            总记录数: ${stats.totalRecords}<br>
+                            鼠标移动: ${stats.moves}<br>
+                            点击事件: ${stats.clicks}<br>
+                            滚动事件: ${stats.scrolls}<br>
+                            <br>
+                            <strong>共享数据:</strong><br>
+                            ${sharedData ? '✅ 存在共享数据' : '❌ 无共享数据'}
+                        `;
+                        
+                    } catch (error) {
+                        section.className = 'test fail';
+                        status.innerHTML = `❌ 轨迹跟踪器测试失败: ${error.message}`;
+                    }
+                }
+                
+            } catch (error) {
+                section.className = 'test fail';
+                status.innerHTML = `❌ 测试失败: ${error.message}`;
+            }
+        }
+        
+        // 测试3: 数据共享状态
+        function testSharedData() {
+            const section = document.getElementById('test-shared');
+            const status = document.getElementById('shared-status');
+            const dataDiv = document.getElementById('shared-data');
+            
+            try {
+                // 检查共享数据键
+
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                
+                if (sharedData) {
+                    const parsed = JSON.parse(sharedData);
+                    
+                    section.className = 'test pass';
+                    status.innerHTML = `✅ 共享数据存在`;
+                    dataDiv.innerHTML = `
+                        <strong>共享数据摘要:</strong><br>
+                        最后更新: ${parsed.summary.lastUpdated}<br>
+                        总点数: ${parsed.summary.totalPoints}<br>
+                        最近点数: ${parsed.recentPoints ? parsed.recentPoints.length : 0}<br>
+                        <br>
+                        <strong>完整数据:</strong><br>
+                        <pre>${JSON.stringify(parsed, null, 2)}</pre>
+                    `;
+                } else {
+                    section.className = 'test fail';
+                    status.innerHTML = `❌ 无共享数据`;
+                    dataDiv.innerHTML = '共享数据键 ks_shared_trajectory_data 不存在';
+                }
+                
+            } catch (error) {
+                section.className = 'test fail';
+                status.innerHTML = `❌ 共享数据测试失败: ${error.message}`;
+            }
+        }
+        
+        // 测试4: 事件监听状态
+        function testEventListeners() {
+            const section = document.getElementById('test-events');
+            const status = document.getElementById('events-status');
+            const dataDiv = document.getElementById('events-data');
+            
+            try {
+                // 模拟一些鼠标事件
+                const events = {
+                    mousemove: false,
+                    mousedown: false,
+                    scroll: false
+                };
+                
+                // 添加测试事件监听器
+                const testListeners = {
+                    mousemove: () => events.mousemove = true,
+                    mousedown: () => events.mousedown = true,
+                    scroll: () => events.scroll = true
+                };
+                
+                // 添加测试监听器
+
+                Object.keys(testListeners).forEach(eventType => {
+                    document.addEventListener(eventType, testListeners[eventType], { passive: true });
+                });
+                
+                // 触发测试事件
+                document.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 100 }));
+                document.dispatchEvent(new MouseEvent('mousedown', { clientX: 100, clientY: 100, button: 0 }));
+                window.dispatchEvent(new Event('scroll'));
+                
+                // 移除测试监听器
+
+                Object.keys(testListeners).forEach(eventType => {
+                    document.removeEventListener(eventType, testListeners[eventType]);
+                });
+                
+                // 检查结果
+                const allEventsCaptured = Object.values(events).every(v => v === true);
+                
+                if (allEventsCaptured) {
+                    section.className = 'test pass';
+                    status.innerHTML = `✅ 所有事件监听器工作正常`;
+                    dataDiv.innerHTML = `
+                        <strong>事件捕获状态:</strong><br>
+                        mousemove: ${events.mousemove ? '✅' : '❌'}<br>
+                        mousedown: ${events.mousedown ? '✅' : '❌'}<br>
+                        scroll: ${events.scroll ? '✅' : '❌'}
+                    `;
+                } else {
+                    section.className = 'test fail';
+                    status.innerHTML = `❌ 部分事件监听器未工作`;
+                    dataDiv.innerHTML = `
+                        <strong>事件捕获状态:</strong><br>
+                        mousemove: ${events.mousemove ? '✅' : '❌'}<br>
+                        mousedown: ${events.mousedown ? '✅' : '❌'}<br>
+                        scroll: ${events.scroll ? '✅' : '❌'}
+                    `;
+                }
+                
+            } catch (error) {
+                section.className = 'test fail';
+                status.innerHTML = `❌ 事件监听测试失败: ${error.message}`;
+            }
+        }
+        
+        // 自动运行基本测试
+
+        window.addEventListener('DOMContentLoaded', function() {
+            testLocalStorage();
+            setTimeout(testTracker, 500);
+            setTimeout(testSharedData, 1500);
+        });
+    </script>
+</body>
+</html>
