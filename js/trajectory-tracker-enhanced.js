@@ -56,6 +56,9 @@
         
         console.log('🚀 增强版轨迹跟踪器初始化');
         
+        // 检查是否有清空标记
+        checkClearFlag();
+        
         // 加载之前保存的数据
         loadSavedData();
         
@@ -67,6 +70,9 @@
         
         // 启动自动保存
         startAutoSave();
+        
+        // 启动定期清空标记检查
+        startClearFlagMonitor();
         
         console.log('✅ 增强版轨迹跟踪器已启动');
     }
@@ -109,6 +115,148 @@
             console.log(`🧹 清理了 ${oldLength - trajectoryData.length} 条过期数据`);
             saveData();
         }
+    }
+    
+    /**
+     * 检查清空标记
+     */
+    function checkClearFlag() {
+        // 检查所有可能的清空标记
+        const clearMarkers = [
+            'ks_data_cleared',
+            'ks_stop_tracking',
+            'ks_clear_all'
+        ];
+        
+        let shouldClear = false;
+        let clearReason = '';
+        
+        for (const marker of clearMarkers) {
+            const markerValue = localStorage.getItem(marker);
+            if (markerValue) {
+                shouldClear = true;
+                clearReason = `${marker}: ${markerValue}`;
+                
+                // 如果是ks_data_cleared，检查是否过期
+                if (marker === 'ks_data_cleared') {
+                    try {
+                        const command = JSON.parse(markerValue);
+                        if (command.expires && Date.now() > command.expires) {
+                            console.log('清空标记已过期，清除标记');
+                            localStorage.removeItem(marker);
+                            shouldClear = false;
+                            continue;
+                        }
+                    } catch (error) {
+                        // 如果不是JSON格式，直接使用
+                    }
+                }
+                
+                console.log(`检测到清空标记: ${clearReason}`);
+                break;
+            }
+        }
+        
+        if (shouldClear) {
+            console.log('执行数据清空操作...');
+            
+            // 1. 停止事件监听（临时）
+            stopEventListeners();
+            
+            // 2. 清除所有数据
+            clearData();
+            
+            // 3. 清除所有清空标记
+            clearMarkers.forEach(marker => {
+                localStorage.removeItem(marker);
+            });
+            
+            // 4. 设置已响应标记
+            localStorage.setItem('ks_cleared_ack', Date.now().toString());
+            
+            // 5. 显示状态（如果页面有状态显示）
+            showClearStatus();
+            
+            console.log('数据清空操作完成');
+            
+            // 6. 暂停跟踪5秒，防止立即重新生成数据
+            pauseTracking(5000);
+        }
+    }
+    
+    /**
+     * 停止事件监听器
+     */
+    function stopEventListeners() {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mousedown', handleMouseDown);
+        document.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        
+        if (saveTimer) {
+            clearInterval(saveTimer);
+            saveTimer = null;
+        }
+        
+        console.log('事件监听器已停止');
+    }
+    
+    /**
+     * 显示清空状态
+     */
+    function showClearStatus() {
+        // 可以在页面上添加状态显示
+        const statusElement = document.getElementById('tracker-status') || 
+                             document.createElement('div');
+        
+        if (!statusElement.id) {
+            statusElement.id = 'tracker-status';
+            statusElement.style.cssText = `
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                background: #f0f0f0;
+                padding: 5px 10px;
+                border-radius: 3px;
+                font-size: 12px;
+                z-index: 9999;
+                border: 1px solid #ccc;
+            `;
+            document.body.appendChild(statusElement);
+        }
+        
+        statusElement.textContent = `跟踪已暂停 (${new Date().toLocaleTimeString()})`;
+        
+        // 5秒后移除
+        setTimeout(() => {
+            if (statusElement.parentNode) {
+                statusElement.parentNode.removeChild(statusElement);
+            }
+        }, 5000);
+    }
+    
+    /**
+     * 暂停跟踪
+     */
+    function pauseTracking(duration) {
+        console.log(`跟踪暂停 ${duration}ms`);
+        
+        // 设置暂停标记
+        TRACKER_CONFIG.enabled = false;
+        
+        // 恢复跟踪
+        setTimeout(() => {
+            TRACKER_CONFIG.enabled = true;
+            console.log('跟踪已恢复');
+        }, duration);
+    }
+    
+    /**
+     * 启动清空标记监控
+     */
+    function startClearFlagMonitor() {
+        // 每2秒检查一次清空标记
+        setInterval(checkClearFlag, 2000);
     }
     
     /**
