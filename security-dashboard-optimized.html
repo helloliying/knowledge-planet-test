@@ -361,6 +361,7 @@
                 <div class="card-header">
                     <div class="card-icon">👤</div>
                     <h3 class="card-title">用户指纹信息</h3>
+                    <button onclick="forceRefreshFingerprint()" style="margin-left: auto; padding: 4px 8px; font-size: 0.8rem; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">强制刷新</button>
                 </div>
                 <div id="fingerprint-info">
                     <p>等待指纹数据...</p>
@@ -594,11 +595,38 @@
             }
         }
         
+        // 强制刷新指纹信息
+        function forceRefreshFingerprint() {
+            console.log('🔄 强制刷新指纹信息...');
+            displayFingerprintInfo();
+            
+            // 显示调试信息
+            const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+            if (sharedData) {
+                try {
+                    const data = JSON.parse(sharedData);
+                    console.log('共享数据调试:', {
+                        是否有指纹: !!data.fingerprint,
+                        指纹哈希: data.fingerprint?.hash || '无',
+                        指纹结构: data.fingerprint ? Object.keys(data.fingerprint) : [],
+                        最后更新: data.summary?.lastUpdated || '未知'
+                    });
+                } catch (error) {
+                    console.error('解析共享数据失败:', error);
+                }
+            }
+        }
+        
         // 定期检查并显示指纹信息
         setInterval(displayFingerprintInfo, 2000);
         
         // 初始显示
         setTimeout(displayFingerprintInfo, 1000);
+        
+        // 添加调试信息
+        console.log('🔍 安全仪表板加载完成');
+        console.log('指纹信息显示函数:', typeof displayFingerprintInfo);
+        console.log('定时器已设置: 每2秒刷新');
     </script>
 </body>
 </html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单指纹测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        button { margin: 10px; padding: 10px 15px; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>简单指纹测试</h1>
+    
+    <div class="test">
+        <h3>测试1: 直接生成指纹数据</h3>
+        <button onclick="generateFingerprint()">生成指纹数据</button>
+        <button onclick="checkFingerprint()">检查指纹数据</button>
+    </div>
+    
+    <div class="test">
+        <h3>测试2: 模拟安全仪表板显示</h3>
+        <button onclick="displayFingerprint()">显示指纹信息</button>
+        <div id="display-area" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 3px;"></div>
+    </div>
+    
+    <div class="test">
+        <h3>测试3: 验证数据流</h3>
+        <button onclick="testDataFlow()">测试数据流</button>
+        <div id="dataflow-result" style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 3px;"></div>
+    </div>
+    
+    <div id="result"></div>
+    
+    <script>
+        // 测试1: 直接生成指纹数据
+        function generateFingerprint() {
+            const resultDiv = document.getElementById('result');
+            
+            // 生成简单的指纹数据
+            const fingerprint = {
+                browser: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language
+                },
+                screen: {
+                    width: screen.width,
+                    height: screen.height,
+                    colorDepth: screen.colorDepth
+                },
+                device: {
+                    hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
+                },
+                timeLocation: {
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                },
+                parsedUA: {
+                    browser: 'test',
+                    os: 'test',
+                    deviceType: 'test'
+                },
+                // 计算简单哈希
+                hash: 'test_hash_' + Date.now().toString(16),
+                timestamp: Date.now()
+            };
+            
+            // 保存到localStorage
+            localStorage.setItem('ks_shared_trajectory_data', JSON.stringify({
+                fingerprint: fingerprint,
+                summary: {
+                    totalPoints: 0,
+                    lastUpdated: new Date().toISOString(),
+                    hasFingerprint: true,
+                    fingerprintHash: fingerprint.hash
+                }
+            }));
+            
+            resultDiv.innerHTML = `
+                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px;">
+                    <h4>✅ 指纹数据已生成</h4>
+                    <p>哈希值: ${fingerprint.hash}</p>
+                    <p>保存到: ks_shared_trajectory_data</p>
+                </div>
+            `;
+            
+            console.log('指纹数据已保存:', fingerprint);
+        }
+        
+        // 检查指纹数据
+        function checkFingerprint() {
+            const resultDiv = document.getElementById('result');
+            
+            const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+            
+            if (!sharedData) {
+                resultDiv.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                        <h4>❌ 无共享数据</h4>
+                        <p>请先点击"生成指纹数据"</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(sharedData);
+                const fingerprint = data.fingerprint;
+                
+                if (!fingerprint) {
+                    resultDiv.innerHTML = `
+                        <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                            <h4>❌ 无指纹数据</h4>
+                            <p>共享数据中无fingerprint字段</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px;">
+                        <h4>✅ 指纹数据存在</h4>
+                        <p>哈希值: ${fingerprint.hash || '无'}</p>
+                        <p>浏览器: ${fingerprint.browser?.userAgent?.substring(0, 50) || '无'}...</p>
+                        <p>屏幕: ${fingerprint.screen?.width || '未知'} × ${fingerprint.screen?.height || '未知'}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                        <h4>❌ 解析失败</h4>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 测试2: 模拟安全仪表板显示
+        function displayFingerprint() {
+            const displayArea = document.getElementById('display-area');
+            
+            const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+            
+            if (!sharedData) {
+                displayArea.innerHTML = `
+                    <div style="color: #dc2626;">
+                        <p>❌ 无共享数据</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(sharedData);
+                const fingerprint = data.fingerprint;
+                
+                if (!fingerprint) {
+                    displayArea.innerHTML = `
+                        <div style="color: #dc2626;">
+                            <p>❌ 无指纹数据</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const html = `
+                    <div style="background: white; padding: 15px; border-radius: 3px; border: 1px solid #ddd;">
+                        <h4 style="margin-top: 0;">指纹信息显示</h4>
+                        <p><strong>🔍 指纹哈希:</strong> <code>${fingerprint.hash || '无'}</code></p>
+                        <p><strong>🌐 浏览器:</strong> ${fingerprint.parsedUA?.browser || '未知'}</p>
+                        <p><strong>💻 操作系统:</strong> ${fingerprint.parsedUA?.os || '未知'}</p>
+                        <p><strong>🖥️ 屏幕:</strong> ${fingerprint.screen?.width || '未知'} × ${fingerprint.screen?.height || '未知'}</p>
+                        <p><strong>🌍 时区:</strong> ${fingerprint.timeLocation?.timezone || '未知'}</p>
+                    </div>
+                `;
+                
+                displayArea.innerHTML = html;
+                
+            } catch (error) {
+                displayArea.innerHTML = `
+                    <div style="color: #dc2626;">
+                        <p>❌ 显示失败</p>
+                        <p>错误: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 测试3: 验证数据流
+        function testDataFlow() {
+            const resultDiv = document.getElementById('dataflow-result');
+            
+            // 模拟主测试页面生成数据
+            const testFingerprint = {
+                hash: 'test_flow_' + Math.random().toString(36).substr(2, 8),
+                browser: { userAgent: 'Test Browser' },
+                screen: { width: 1920, height: 1080 },
+                timestamp: Date.now()
+            };
+            
+            // 保存数据
+            localStorage.setItem('ks_shared_trajectory_data', JSON.stringify({
+                fingerprint: testFingerprint,
+                summary: { fingerprintHash: testFingerprint.hash }
+            }));
+            
+            // 立即读取并显示
+            const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+            const data = JSON.parse(sharedData);
+            
+            resultDiv.innerHTML = `
+                <div style="background: #e0f2fe; color: #0369a1; padding: 15px; border-radius: 5px; border: 1px solid #0ea5e9;">
+                    <h4>✅ 数据流测试完成</h4>
+                    <p>写入哈希: ${testFingerprint.hash}</p>
+                    <p>读取哈希: ${data.fingerprint.hash}</p>
+                    <p>状态: ${testFingerprint.hash === data.fingerprint.hash ? '✅ 匹配' : '❌ 不匹配'}</p>
+                    <p>结论: localStorage数据流工作正常</p>
+                </div>
+            `;
+        }
+        
+        // 页面加载时自动运行一个测试
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('简单指纹测试页面已加载');
+            console.log('当前localStorage中的ks_shared_trajectory_data:', localStorage.getItem('ks_shared_trajectory_data'));
+        });
+    </script>
+</body>
+</html>

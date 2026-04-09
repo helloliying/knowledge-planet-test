@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诊断指纹信息显示问题</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .diagnosis { background: #f8f9fa; padding: 20px; border-radius: 5px; border: 1px solid #dee2e6; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow: auto; }
+        button { margin: 10px 5px; padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>诊断指纹信息显示问题</h1>
+    
+    <div class="diagnosis">
+        <h3>问题描述</h3>
+        <p>安全仪表板无法显示指纹哈希值，即使主测试页面已经采集了指纹信息。</p>
+        
+        <h3>诊断步骤</h3>
+        <ol>
+            <li>检查localStorage中是否有共享数据</li>
+            <li>检查共享数据中是否有指纹信息</li>
+            <li>检查指纹信息中是否有哈希值</li>
+            <li>检查页面元素是否正确</li>
+            <li>检查JavaScript函数是否正常工作</li>
+        </ol>
+        
+        <button onclick="runDiagnosis()">运行诊断</button>
+        <button onclick="clearDiagnosis()">清除结果</button>
+        
+        <div id="diagnosis-result" style="margin-top: 20px;"></div>
+    </div>
+    
+    <script>
+        // 诊断函数
+        function runDiagnosis() {
+            const resultDiv = document.getElementById('diagnosis-result');
+            resultDiv.innerHTML = '<pre>正在诊断...请查看浏览器控制台 (F12 → Console)</pre>';
+            
+            console.log('🔍 开始诊断指纹信息显示问题...');
+            
+            // 检查localStorage中的指纹数据
+            const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+            console.log('1. 检查共享数据是否存在:', sharedData ? '✅ 存在' : '❌ 不存在');
+            
+            let diagnosisResult = '';
+            
+            if (sharedData) {
+                try {
+                    const data = JSON.parse(sharedData);
+                    console.log('2. 解析共享数据:', data ? '✅ 成功' : '❌ 失败');
+                    
+                    if (data) {
+                        console.log('3. 检查指纹数据:', data.fingerprint ? '✅ 存在' : '❌ 不存在');
+                        
+                        if (data.fingerprint) {
+                            console.log('4. 指纹数据结构:', {
+                                hash: data.fingerprint.hash || '无',
+                                browser: data.fingerprint.browser ? '有' : '无',
+                                screen: data.fingerprint.screen ? '有' : '无',
+                                parsedUA: data.fingerprint.parsedUA ? '有' : '无',
+                                timestamp: data.fingerprint.timestamp || '无'
+                            });
+                            
+                            console.log('5. 指纹哈希值:', data.fingerprint.hash || '无哈希值');
+                            
+                            // 检查是否包含哈希字段
+                            if (data.fingerprint.hash) {
+                                console.log('✅ 指纹哈希值存在:', data.fingerprint.hash);
+                                diagnosisResult = `
+                                    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                                        <h4>✅ 诊断结果: 指纹数据正常</h4>
+                                        <p>指纹哈希值: <code>${data.fingerprint.hash}</code></p>
+                                        <p>问题可能在于安全仪表板的显示逻辑</p>
+                                    </div>
+                                `;
+                            } else {
+                                console.log('❌ 问题: 指纹数据缺少hash字段');
+                                diagnosisResult = `
+                                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                                        <h4>❌ 诊断结果: 指纹数据缺少哈希值</h4>
+                                        <p>指纹数据中缺少<code>hash</code>字段</p>
+                                        <p>完整指纹数据:</p>
+                                        <pre>${JSON.stringify(data.fingerprint, null, 2)}</pre>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            console.log('❌ 问题: 共享数据中无fingerprint字段');
+                            diagnosisResult = `
+                                <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                                    <h4>❌ 诊断结果: 共享数据中无指纹信息</h4>
+                                    <p>共享数据字段: ${Object.keys(data).join(', ')}</p>
+                                    <p>请确保主测试页面正在运行带指纹采集的版本</p>
+                                </div>
+                            `;
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ 解析共享数据失败:', error);
+                    diagnosisResult = `
+                        <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                            <h4>❌ 诊断结果: 数据格式错误</h4>
+                            <p>无法解析共享数据: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                diagnosisResult = `
+                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                        <h4>⚠️ 诊断结果: 无共享数据</h4>
+                        <p>请先访问主测试页面并移动鼠标</p>
+                        <p>主测试页面: <a href="https://helloliying.github.io/knowledge-planet-test/" target="_blank">https://helloliying.github.io/knowledge-planet-test/</a></p>
+                    </div>
+                `;
+            }
+            
+            // 检查页面元素
+            const fingerprintInfoElement = document.getElementById('fingerprint-info');
+            console.log('6. 检查页面元素:', fingerprintInfoElement ? '✅ 找到元素' : '❌ 找不到元素');
+            
+            // 手动运行显示函数
+            console.log('\n🚀 手动运行displayFingerprintInfo函数...');
+            if (typeof displayFingerprintInfo === 'function') {
+                try {
+                    displayFingerprintInfo();
+                    console.log('✅ 函数执行成功');
+                } catch (error) {
+                    console.error('❌ 函数执行失败:', error);
+                }
+            } else {
+                console.log('❌ displayFingerprintInfo函数未定义');
+            }
+            
+            // 更新结果显示
+            resultDiv.innerHTML = diagnosisResult;
+            
+            console.log('\n🔍 诊断完成。请查看上面的结果。');
+        }
+        
+        function clearDiagnosis() {
+            document.getElementById('diagnosis-result').innerHTML = '';
+        }
+    </script>
+    
+    <div style="margin-top: 30px;">
+        <h3>快速修复建议</h3>
+        <ol>
+            <li><strong>检查主测试页面</strong>: 确保访问的是 <a href="https://helloliying.github.io/knowledge-planet-test/" target="_blank">主测试页面</a> 并看到控制台显示"指纹信息已收集"</li>
+            <li><strong>强制刷新</strong>: 按 Ctrl+F5 清除浏览器缓存</li>
+            <li><strong>检查localStorage</strong>: 按F12 → Application → Local Storage 查看 <code>ks_shared_trajectory_data</code></li>
+            <li><strong>运行诊断</strong>: 点击上面的"运行诊断"按钮</li>
+        </ol>
+    </div>
+</body>
+</html>
