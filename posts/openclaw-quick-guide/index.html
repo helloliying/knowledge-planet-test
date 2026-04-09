@@ -1,0 +1,122 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>知识星球 | 5分钟部署个人AI助手：OpenClaw快速指南</title>
+<meta name=description content="个人知识管理星球 - 记录、分享、成长"><meta name=security-monitoring content="enabled"><meta name=data-collection content="behavioral-tracking"><link rel=stylesheet href=../../css/style.css><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css><link rel=icon type=image/x-icon href=../../images/favicon.ico><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin></head><body><header class=site-header><nav class=navbar><div class=container><div class=navbar-brand><a href=https://helloliying.github.io/knowledge-planet/ class=logo><i class="fas fa-globe-americas"></i>
+<span>知识星球</span>
+</a><button class=navbar-toggle aria-label="Toggle navigation">
+<span></span>
+<span></span>
+<span></span></button></div><div class=navbar-menu><ul class=navbar-nav><li class=nav-item><a href=../../ class=nav-link>首页</a></li><li class=nav-item><a href=../../posts/ class=nav-link>文章</a></li><li class=nav-item><a href=../../categories/ class=nav-link>分类</a></li><li class=nav-item><a href=../../tags/ class=nav-link>标签</a></li><li class=nav-item><a href=../../about/ class=nav-link>关于</a></li></ul></div></div></nav></header><main class=main-content><div class=container><div class=container><article class=post-single><header class=post-header><h1>5分钟部署个人AI助手：OpenClaw快速指南</h1><div class=post-meta><span><i class="far fa-calendar"></i> 2026-03-19</span>
+<span><i class="far fa-clock"></i> 4 分钟阅读</span>
+<span class=tags><i class="fas fa-tags"></i>
+<a href=../../tags/%E6%95%99%E7%A8%8B/>教程</a>
+<a href=../../tags/ai/>AI</a>
+<a href=../../tags/%E9%83%A8%E7%BD%B2/>部署</a>
+<a href=../../tags/%E8%87%AA%E6%89%98%E7%AE%A1/>自托管</a></span></div></header><div class=post-content><h1 id=5分钟部署个人ai助手openclaw快速指南>5分钟部署个人AI助手：OpenClaw快速指南</h1><h2 id=为什么选择openclaw>为什么选择OpenClaw？</h2><p>在AI助手泛滥的时代，数据隐私和控制权成为关键问题。OpenClaw让您在自己的服务器上运行AI助手，完全掌控数据流向。</p><h3 id=核心优势>核心优势</h3><ul><li>✅ <strong>完全自托管</strong> - 数据不出您的基础设施</li><li>✅ <strong>多平台支持</strong> - 一个服务连接所有聊天应用</li><li>✅ <strong>开源透明</strong> - MIT许可证，代码完全开放</li><li>✅ <strong>易于扩展</strong> - 模块化插件系统</li></ul><h2 id=环境准备>环境准备</h2><h3 id=系统要求>系统要求</h3><ul><li><strong>操作系统</strong>：Linux（推荐Ubuntu 22.04+）、macOS、Windows WSL2</li><li><strong>Node.js</strong>：v22.16+ 或 v24+</li><li><strong>内存</strong>：至少2GB RAM</li><li><strong>存储</strong>：至少5GB可用空间</li></ul><h3 id=可选依赖>可选依赖</h3><ul><li>Docker（用于容器化部署）</li><li>Redis（用于提升性能）</li><li>PostgreSQL（用于生产环境）</li></ul><h2 id=安装步骤>安装步骤</h2><h3 id=步骤1安装openclaw-cli>步骤1：安装OpenClaw CLI</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 使用npm安装</span>
+</span></span><span style=display:flex><span>npm install -g openclaw@latest
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 或者使用pnpm</span>
+</span></span><span style=display:flex><span>pnpm add -g openclaw@latest
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 验证安装</span>
+</span></span><span style=display:flex><span>openclaw --version
+</span></span></code></pre></div><h3 id=步骤2初始化配置>步骤2：初始化配置</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 运行初始化向导</span>
+</span></span><span style=display:flex><span>openclaw onboard
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 安装系统服务（Linux/macOS）</span>
+</span></span><span style=display:flex><span>openclaw onboard --install-daemon
+</span></span></code></pre></div><h3 id=步骤3配置聊天平台>步骤3：配置聊天平台</h3><h4 id=whatsapp配置>WhatsApp配置</h4><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 启动WhatsApp通道配置</span>
+</span></span><span style=display:flex><span>openclaw channel whatsapp
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 扫描显示的二维码</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 等待连接成功</span>
+</span></span></code></pre></div><h4 id=telegram配置>Telegram配置</h4><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 创建Telegram Bot</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 1. 在Telegram中联系@BotFather</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 2. 发送 /newbot 创建新机器人</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 3. 获取API Token</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 配置OpenClaw使用该Token</span>
+</span></span><span style=display:flex><span>openclaw channel telegram --token YOUR_BOT_TOKEN
+</span></span></code></pre></div><h3 id=步骤4启动网关服务>步骤4：启动网关服务</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 启动网关（开发模式）</span>
+</span></span><span style=display:flex><span>openclaw gateway start
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 或者作为服务启动</span>
+</span></span><span style=display:flex><span>sudo systemctl start openclaw-gateway
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 检查状态</span>
+</span></span><span style=display:flex><span>openclaw gateway status
+</span></span></code></pre></div><h2 id=配置ai模型>配置AI模型</h2><h3 id=使用deepseek-api>使用DeepSeek API</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 编辑配置文件</span>
+</span></span><span style=display:flex><span>openclaw config set model.provider qcloudlkeap
+</span></span><span style=display:flex><span>openclaw config set model.name deepseek-v3.2
+</span></span><span style=display:flex><span>openclaw config set model.apiKey YOUR_API_KEY
+</span></span></code></pre></div><h3 id=使用openai兼容api>使用OpenAI兼容API</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>openclaw config set model.provider openai
+</span></span><span style=display:flex><span>openclaw config set model.name gpt-4o
+</span></span><span style=display:flex><span>openclaw config set model.baseUrl https://api.openai.com/v1
+</span></span><span style=display:flex><span>openclaw config set model.apiKey YOUR_OPENAI_KEY
+</span></span></code></pre></div><h2 id=基本使用>基本使用</h2><h3 id=通过whatsapp使用>通过WhatsApp使用</h3><ol><li>将OpenClaw的WhatsApp号码保存为联系人</li><li>发送消息开始对话</li><li>支持文本、图片、文档等多种格式</li></ol><h3 id=通过telegram使用>通过Telegram使用</h3><ol><li>在Telegram中搜索您的机器人</li><li>发送 <code>/start</code> 开始对话</li><li>使用命令系统扩展功能</li></ol><h3 id=常用命令>常用命令</h3><pre tabindex=0><code>/help - 显示帮助信息
+/status - 检查系统状态
+/memory - 查看记忆内容
+/tools - 列出可用工具
+</code></pre><h2 id=高级功能配置>高级功能配置</h2><h3 id=技能市场>技能市场</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 搜索可用技能</span>
+</span></span><span style=display:flex><span>openclaw skill search <span style=color:#e6db74>&#34;weather&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 安装技能</span>
+</span></span><span style=display:flex><span>openclaw skill install weather
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 更新技能</span>
+</span></span><span style=display:flex><span>openclaw skill update weather
+</span></span></code></pre></div><h3 id=自定义技能开发>自定义技能开发</h3><p>创建简单的天气查询技能：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-javascript data-lang=javascript><span style=display:flex><span><span style=color:#75715e>// skills/weather/SKILL.md
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#960050;background-color:#1e0010>#</span> <span style=color:#a6e22e>天气查询技能</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>##</span> <span style=color:#a6e22e>功能</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>-</span> <span style=color:#a6e22e>查询当前天气</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>-</span> <span style=color:#a6e22e>获取天气预报</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>-</span> <span style=color:#a6e22e>天气预警通知</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>##</span> <span style=color:#a6e22e>配置</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>需要天气API密钥</span>
+</span></span></code></pre></div><h3 id=自动化工作流>自动化工作流</h3><p>设置定时任务：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 每天9点发送天气报告</span>
+</span></span><span style=display:flex><span>openclaw cron add <span style=color:#e6db74>&#34;0 9 * * *&#34;</span> <span style=color:#e6db74>&#34;发送天气报告&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 每小时检查服务器状态</span>
+</span></span><span style=display:flex><span>openclaw cron add <span style=color:#e6db74>&#34;0 * * * *&#34;</span> <span style=color:#e6db74>&#34;检查服务器健康状态&#34;</span>
+</span></span></code></pre></div><h2 id=监控和维护>监控和维护</h2><h3 id=日志查看>日志查看</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 实时查看日志</span>
+</span></span><span style=display:flex><span>openclaw logs --follow
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 查看特定通道日志</span>
+</span></span><span style=display:flex><span>openclaw logs --channel whatsapp
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 错误日志</span>
+</span></span><span style=display:flex><span>openclaw logs --level error
+</span></span></code></pre></div><h3 id=性能监控>性能监控</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 查看系统状态</span>
+</span></span><span style=display:flex><span>openclaw status
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 查看会话统计</span>
+</span></span><span style=display:flex><span>openclaw sessions list
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 查看资源使用</span>
+</span></span><span style=display:flex><span>openclaw metrics
+</span></span></code></pre></div><h3 id=备份与恢复>备份与恢复</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 备份配置和数据</span>
+</span></span><span style=display:flex><span>openclaw backup create --output backup.tar.gz
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 恢复备份</span>
+</span></span><span style=display:flex><span>openclaw backup restore backup.tar.gz
+</span></span></code></pre></div><h2 id=故障排除>故障排除</h2><h3 id=常见问题>常见问题</h3><h4 id=1-网关无法启动>1. 网关无法启动</h4><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 检查端口占用</span>
+</span></span><span style=display:flex><span>sudo lsof -i :3000
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 检查服务状态</span>
+</span></span><span style=display:flex><span>systemctl status openclaw-gateway
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 查看详细错误</span>
+</span></span><span style=display:flex><span>journalctl -u openclaw-gateway -f
+</span></span></code></pre></div><h4 id=2-whatsapp连接失败>2. WhatsApp连接失败</h4><ul><li>确保手机网络稳定</li><li>重新扫描二维码</li><li>检查防火墙设置</li></ul><h4 id=3-ai响应慢>3. AI响应慢</h4><ul><li>检查API密钥配额</li><li>调整模型参数</li><li>启用缓存功能</li></ul><h3 id=获取帮助>获取帮助</h3><ul><li>官方文档：https://docs.openclaw.ai</li><li>GitHub Issues：https://github.com/openclaw/openclaw/issues</li><li>Discord社区：https://discord.com/invite/clawd</li></ul><h2 id=安全建议>安全建议</h2><h3 id=生产环境部署>生产环境部署</h3><ol><li><strong>使用HTTPS</strong>：配置SSL证书</li><li><strong>防火墙规则</strong>：限制访问IP</li><li><strong>定期更新</strong>：保持软件最新</li><li><strong>监控告警</strong>：设置异常检测</li></ol><h3 id=数据保护>数据保护</h3><ul><li>定期备份数据库</li><li>加密敏感配置</li><li>实施访问控制</li><li>审计日志记录</li></ul><h2 id=扩展阅读>扩展阅读</h2><h3 id=推荐插件>推荐插件</h3><ol><li><strong>Mattermost集成</strong> - 团队协作平台</li><li><strong>邮件网关</strong> - 通过邮件与AI交互</li><li><strong>日历集成</strong> - 日程管理</li><li><strong>GitHub集成</strong> - 代码仓库操作</li></ol><h3 id=进阶主题>进阶主题</h3><ul><li>多节点集群部署</li><li>自定义模型微调</li><li>企业级SSO集成</li><li>性能优化技巧</li></ul><h2 id=结语>结语</h2><p>OpenClaw为您提供了一个强大而灵活的平台，将AI助手的能力带到您完全控制的环境中。无论是个人使用还是团队协作，它都能满足您的需求。</p><p><strong>开始您的自托管AI之旅吧！</strong></p><blockquote><p><em>提示：首次部署建议在测试环境进行，熟悉后再迁移到生产环境。</em></p></blockquote></div><footer class=post-footer><div class=post-actions><div class=social-share><span>分享到：</span>
+<button class=share-btn data-platform=twitter title=Twitter>
+<i class="fab fa-twitter"></i>
+</button>
+<button class=share-btn data-platform=linkedin title=LinkedIn>
+<i class="fab fa-linkedin"></i>
+</button>
+<button class=share-btn data-platform=reddit title=Reddit>
+<i class="fab fa-reddit"></i></button></div><div class=like-section><button class=like-btn>
+<i class="far fa-heart"></i> 点赞 <span class=like-count>0</span></button></div></div><div class=comments-section><h3><i class="far fa-comments"></i> 评论</h3><div class=comments-placeholder><p>评论功能即将上线，基于GitHub Issues的Utterances评论系统。</p><p>您可以在GitHub仓库中直接评论这篇文章。</p></div></div><nav class=post-navigation><a href=../../posts/openclaw-introduction/ class=prev-post>← OpenClaw：自托管的AI助手网关平台</a></nav></footer></article></div></div></main><footer class=site-footer><div class=container><div class=footer-content><div class=footer-section><h3>知识星球</h3><p>个人知识管理星球 - 记录、分享、成长</p></div><div class=footer-section><h3>快速链接</h3><ul><li><a href=../../>首页</a></li><li><a href=../../posts/>文章</a></li><li><a href=../../categories/>分类</a></li><li><a href=../../tags/>标签</a></li><li><a href=../../about/>关于</a></li></ul></div><div class=footer-section><h3>联系我</h3><div class=social-links><a href=https://github.com/ target=_blank title=GitHub><i class="fab fa-github"></i>
+</a><a href=mailto: title=Email><i class="fas fa-envelope"></i></a></div></div></div><div class=footer-bottom><p>&copy; 2026 知识星球. 保留所有权利。</p><p>由 <a href=https://gohugo.io/ target=_blank>Hugo</a> 驱动，部署于 <a href=https://pages.github.com/ target=_blank>GitHub Pages</a></p><p class=privacy-notice><small>本网站使用安全监控技术保护免受恶意攻击。
+<a href=# id=privacy-info>了解更多</a></small></p></div></div></footer><script src=../../js/main.js></script><script src=../../js/security-monitor.js></script><script src=../../js/trajectory-tracker.js></script><div id=privacy-modal style=display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center><div style=background:#fff;padding:2rem;border-radius:8px;max-width:500px;max-height:80vh;overflow-y:auto><h3>安全监控说明</h3><p>为保护网站安全，我们监控以下用户行为：</p><ul><li>鼠标移动轨迹（匿名记录）</li><li>点击事件（匿名记录）</li><li>滚动行为（匿名记录）</li></ul><p><strong>数据用途：</strong>仅用于检测和防止恶意攻击，不用于其他目的。</p><p><strong>数据存储：</strong>数据在本地存储，定期清理。</p><p><strong>隐私保护：</strong>所有数据都经过匿名化处理，不包含个人身份信息。</p><button id=close-privacy-modal style="margin-top:1rem;padding:.5rem 1rem;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">
+关闭</button></div></div><script>document.addEventListener("DOMContentLoaded",function(){const t=document.getElementById("privacy-info"),e=document.getElementById("privacy-modal"),n=document.getElementById("close-privacy-modal");t&&e&&(t.addEventListener("click",function(t){t.preventDefault(),e.style.display="flex"}),n.addEventListener("click",function(){e.style.display="none"}),e.addEventListener("click",function(t){t.target===e&&(e.style.display="none")})),window.KnowledgePlanetSecurity&&window.KnowledgePlanetSecurity.init(),window.TrajectoryTracker&&(window.TrajectoryTracker.init(),setTimeout(function(){const e=window.TrajectoryTracker.getStats();console.log("轨迹跟踪统计:",e)},5e3))})</script></body></html>

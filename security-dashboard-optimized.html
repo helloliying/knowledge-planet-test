@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全监控仪表板 (优化版) - 知识星球</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #60a5fa, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .dashboard-header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #334155;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #60a5fa;
+        }
+        
+        .stat-card h3 {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #60a5fa;
+        }
+        
+        .chart-container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        
+        .chart-container h2 {
+            margin-bottom: 1rem;
+            color: #e2e8f0;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        
+        #trajectory-chart {
+            width: 100%;
+            height: 300px;
+        }
+        
+        #distribution-chart {
+            width: 100%;
+            height: 180px;
+        }
+        
+        .controls-panel {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        
+        .btn-secondary:hover {
+            background: #475569;
+        }
+        
+        .data-preview {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        
+        .visualization-options {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #1a2235;
+            border-radius: 8px;
+        }
+        
+        .option-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .option-label input[type="range"] {
+            width: 100px;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            #distribution-chart {
+                height: 150px;
+            }
+            
+            .option-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>🔒 安全监控仪表板</h1>
+            <p>优化版 - 改进的可视化效果 (轨迹点缩小)</p>
+        </div>
+        
+        <div class="stats-grid" id="live-stats">
+            <!-- 动态加载 -->
+        </div>
+        
+        <div class="chart-container">
+            <h2>📈 鼠标轨迹 (优化版)</h2>
+            <div class="chart-wrapper">
+                <canvas id="trajectory-chart"></canvas>
+            </div>
+            <div class="visualization-options">
+                <div class="option-group">
+                    <label class="option-label">
+                        轨迹点大小: <span id="point-size-value">1</span>px
+                        <input type="range" id="point-size-slider" min="0.5" max="3" step="0.1" value="1">
+                    </label>
+                    <label class="option-label">
+                        透明度: <span id="opacity-value">0.3</span>
+                        <input type="range" id="opacity-slider" min="0.1" max="0.8" step="0.05" value="0.3">
+                    </label>
+                    <label class="option-label">
+                        显示点数: <span id="point-count-value">100</span>
+                        <input type="range" id="point-count-slider" min="20" max="500" step="10" value="100">
+                    </label>
+                    <button onclick="resetVisualization()" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">重置设置</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2>📊 事件类型分布</h2>
+            <div class="chart-wrapper">
+                <canvas id="distribution-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="controls-panel">
+            <h2>🎮 数据管理</h2>
+            <div>
+                <button onclick="exportData()" class="btn btn-primary">导出数据</button>
+                <button onclick="downloadData()" class="btn btn-primary">下载文件</button>
+                <button onclick="clearData()" class="btn btn-secondary">清空数据</button>
+                <button onclick="refreshStats()" class="btn btn-secondary">刷新统计</button>
+            </div>
+            <div>
+                <h3>数据预览</h3>
+                <div class="data-preview" id="data-preview">
+                    点击"导出数据"查看完整数据
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // 优化版轨迹跟踪器
+        const TrajectoryTracker = {
+            data: [],
+            config: {
+                enabled: true,
+                sampleInterval: 50, // 降低采样频率，减少数据量
+                maxRecords: 5000,
+                storageKey: 'ks_trajectory_optimized',
+                saveInterval: 5000,
+                verbose: false // 减少日志输出
+            },
+            
+            init: function() {
+                if (!this.config.enabled) return;
+                
+                console.log('🚀 轨迹跟踪器初始化 (优化版)');
+                
+                // 从本地存储加载数据
+                this.loadFromStorage();
+                
+                // 绑定事件
+                let lastMouseMoveTime = 0;
+                document.addEventListener('mousemove', (event) => {
+                    const now = Date.now();
+                    if (now - lastMouseMoveTime > this.config.sampleInterval) {
+                        this.handleMouseMove(event);
+                        lastMouseMoveTime = now;
+                    }
+                });
+                
+                document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                document.addEventListener('scroll', this.handleScroll.bind(this));
+                
+                // 定期保存
+                setInterval(this.saveToStorage.bind(this), this.config.saveInterval);
+                
+                console.log('✅ 轨迹跟踪器已启动');
+            },
+            
+            handleMouseMove: function(event) {
+                const record = {
+                    t: Date.now(),
+                    x: event.clientX,
+                    y: event.clientY,
+                    type: 'mousemove',
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.data.push(record);
+                
+                // 保持数据量在合理范围
+                if (this.data.length > this.config.maxRecords) {
+                    this.data = this.data.slice(-this.config.maxRecords);
+                }
+            },
+            
+            handleMouseDown: function(event) {
+                const record = {
+                    t: Date.now(),
+                    x: event.clientX,
+                    y: event.clientY,
+                    type: 'mousedown',
+                    button: event.button,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.data.push(record);
+            },
+            
+            handleScroll: function() {
+                const record = {
+                    t: Date.now(),
+                    type: 'scroll',
+                    scrollX: window.scrollX,
+                    scrollY: window.scrollY,
+                    innerWidth: window.innerWidth,
+                    innerHeight: window.innerHeight,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.data.push(record);
+            },
+            
+            getStream: function(maxPoints = 100) {
+                const allPoints = this.data
+                    .filter(record => record.x !== undefined && record.y !== undefined)
+                    .map(record => ({
+                        t: record.t,
+                        x: record.x,
+                        y: record.y,
+                        type: record.type
+                    }));
+                
+                // 如果数据太多，均匀采样
+                if (allPoints.length > maxPoints) {
+                    const step = Math.floor(allPoints.length / maxPoints);
+                    return allPoints.filter((_, index) => index % step === 0).slice(0, maxPoints);
+                }
+                return allPoints;
+            },
+            
+            getStats: function() {
+                const moves = this.data.filter(r => r.type === 'mousemove');
+                const clicks = this.data.filter(r => r.type === 'mousedown');
+                const scrolls = this.data.filter(r => r.type === 'scroll');
+                
+                return {
+                    totalRecords: this.data.length,
+                    moves: moves.length,
+                    clicks: clicks.length,
+                    scrolls: scrolls.length,
+                    suspicious: 0,
+                    windowSize: `${window.innerWidth}×${window.innerHeight}`,
+                    hasData: this.data.length > 0
+                };
+            },
+            
+            exportData: function() {
+                return JSON.stringify({
+                    metadata: {
+                        exportedAt: new Date().toISOString(),
+                        page: window.location.href,
+                        version: '优化版',
+                        stats: this.getStats()
+                    },
+                    trajectory: this.getStream(1000) // 导出最多1000个点
+                }, null, 2);
+            },
+            
+            clearData: function() {
+                this.data = [];
+                localStorage.removeItem(this.config.storageKey);
+                console.log('✅ 数据已清空');
+            },
+            
+            saveToStorage: function() {
+                try {
+                    const dataToSave = this.data.slice(-1000); // 只保存最近1000条
+                    localStorage.setItem(this.config.storageKey, JSON.stringify(dataToSave));
+                } catch (error) {
+                    console.error('保存失败:', error);
+                }
+            },
+            
+            loadFromStorage: function() {
+                try {
+                    const stored = localStorage.getItem(this.config.storageKey);
+                    if (stored) {
+                        this.data = JSON.parse(stored);
+                        console.log('📂 已加载存储数据:', this.data.length, '条记录');
+                    }
+                } catch (error) {
+                    console.error('加载失败:', error);
+                }
+            }
+        };
+        
+        // 仪表板功能
+        let trajectoryChart = null;
+        let distributionChart = null;
+        let updateInterval = null;
+        
+        // 可视化设置
+        const visualizationSettings = {
+            pointRadius: 1,
+            backgroundColor: 'rgba(96, 165, 250, 0.3)',
+            borderColor: 'rgba(96, 165, 250, 0.8)',
+            maxPoints: 100,
+            pointBorderWidth: 0.5
+        };
+        
+        function initDashboard() {
+            console.log('🚀 初始化仪表板 (优化版)...');
+            
+            // 初始化轨迹跟踪器
+            TrajectoryTracker.init();
+            
+            // 初始化图表
+            initCharts();
+            
+            // 初始化可视化控制
+            initVisualizationControls();
+            
+            // 启动实时更新
+            startLiveUpdates();
+            
+            console.log('✅ 仪表板准备就绪 (优化版)');
+        }
+        
+        function initCharts() {
+            // 轨迹图表 - 优化配置
+            const trajectoryCtx = document.getElementById('trajectory-chart').getContext('2d');
+            trajectoryChart = new Chart(trajectoryCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '鼠标轨迹',
+                        data: [],
+                        backgroundColor: visualizationSettings.backgroundColor,
+                        borderColor: visualizationSettings.borderColor,
+                        borderWidth: visualizationSettings.pointBorderWidth,
+                        pointRadius: visualizationSettings.pointRadius,
+                        pointHoverRadius: 2,
+                        pointHitRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // 禁用动画，提高性能
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            grid: { 
+                                color: '#334155',
+                                lineWidth: 0.5
+                            },
+                            ticks: { 
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            },
+                            min: 0,
+                            max: window.innerWidth || 1400
+                        },
+                        y: {
+                            reverse: true,
+                            grid: { 
+                                color: '#334155',
+                                lineWidth: 0.5
+                            },
+                            ticks: { 
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            },
+                            min: 0,
+                            max: window.innerHeight || 800
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `坐标: (${context.parsed.x}, ${context.parsed.y})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 分布图表
+            const distributionCtx = document.getElementById('distribution-chart').getContext('2d');
+            distributionChart = new Chart(distributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['鼠标移动', '点击', '滚动', '其他'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(96, 165, 250, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(100, 116, 139, 0.8)'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { 
+                                color: '#94a3b8', 
+                                font: { size: 11 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw} 次`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+        
+        function initVisualizationControls() {
+            const pointSizeSlider = document.getElementById('point-size-slider');
+            const opacitySlider = document.getElementById('opacity-slider');
+            const pointCountSlider = document.getElementById('point-count-slider');
+            
+            pointSizeSlider.addEventListener('input', function() {
+                visualizationSettings.pointRadius = parseFloat(this.value);
+                document.getElementById('point-size-value').textContent = this.value;
+                updateChartSettings();
+            });
+            
+            opacitySlider.addEventListener('input', function() {
+                const opacity = parseFloat(this.value);
+                visualizationSettings.backgroundColor = `rgba(96, 165, 250, ${opacity})`;
+                visualizationSettings.borderColor = `rgba(96, 165, 250, ${Math.min(opacity + 0.2, 0.9)})`;
+                document.getElementById('opacity-value').textContent = this.value;
+                updateChartSettings();
+            });
+            
+            pointCountSlider.addEventListener('input', function() {
+                visualizationSettings.maxPoints = parseInt(this.value);
+                document.getElementById('point-count-value').textContent = this.value;
+            });
+        }
+        
+        function updateChartSettings() {
+            if (trajectoryChart) {
+                trajectoryChart.data.datasets[0].pointRadius = visualizationSettings.pointRadius;
+                trajectoryChart.data.datasets[0].backgroundColor = visualizationSettings.backgroundColor;
+                trajectoryChart.data.datasets[0].borderColor = visualizationSettings.borderColor;
+                trajectoryChart.update('none');
+            }
+        }
+        
+        function resetVisualization() {
+            visualizationSettings.pointRadius = 1;
+            visualizationSettings.backgroundColor = 'rgba(96, 165, 250, 0.3)';
+            visualizationSettings.borderColor = 'rgba(96, 165, 250, 0.8)';
+            visualizationSettings.maxPoints = 100;
+            
+            document.getElementById('point-size-slider').value = 1;
+            document.getElementById('opacity-slider').value = 0.3;
+            document.getElementById('point-count-slider').value = 100;
+            
+            document.getElementById('point-size-value').textContent = '1';
+            document.getElementById('opacity-value').textContent = '0.3';
+            document.getElementById('point-count-value').textContent = '100';
+            
+            updateChartSettings();
+        }
+        
+        function startLiveUpdates() {
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(updateDashboard, 500); // 每500ms更新
+            updateDashboard();
+        }
+        
+        function updateDashboard() {
+            const stats = TrajectoryTracker.getStats();
+            const stream = TrajectoryTracker.getStream(visualizationSettings.maxPoints);
+            
+            updateStatsCards(stats);
+            updateTrajectoryChart(stream);
+            updateDistributionChart(stats);
+        }
+        
+        function updateStatsCards(stats) {
+            const container = document.getElementById('live-stats');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div class="stat-card">
+                    <h3>轨迹记录</h3>
+                    <div class="stat-value">${stats.moves || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>点击事件</h3>
+                    <div class="stat-value">${stats.clicks || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>滚动事件</h3>
+                    <div class="stat-value">${stats.scrolls || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>总记录数</h3>
+                    <div class="stat-value">${stats.totalRecords || 0}</div>
+                </div>
+            `;
+        }
+        
+        function updateTrajectoryChart(stream) {
+            if (!trajectoryChart || !stream || stream.length === 0) return;
+            
+            // 转换数据格式
+            const data = stream.map(p => ({x: p.x, y: p.y}));
+            
+            // 更新图表
+            trajectoryChart.data.datasets[0].data = data;
+            
+            // 动态调整坐标范围
+            if (data.length > 0) {
+                const xValues = data.map(p => p.x);
+                const yValues = data.map(p => p.y);
+                
+                trajectoryChart.options.scales.x.min = Math.min(...xValues) - 50;
+                trajectoryChart.options.scales.x.max = Math.max(...xValues) + 50;
+                trajectoryChart.options.scales.y.min = Math.min(...yValues) - 50;
+                trajectoryChart.options.scales.y.max = Math.max(...yValues) + 50;
+            }
+            
+            trajectoryChart.update('none');
+        }
+        
+        function updateDistributionChart(stats) {
+            if (!distributionChart) return;
+            
+            distributionChart.data.datasets[0].data = [
+                stats.moves || 0,
+                stats.clicks || 0,
+                stats.scrolls || 0,
+                Math.max(0, stats.totalRecords - (stats.moves + stats.clicks + stats.scrolls))
+            ];
+            distributionChart.update('none');
+        }
+        
+        function exportData() {
+            const data = TrajectoryTracker.exportData();
+            const preview = document.getElementById('data-preview');
+            if (preview) {
+                preview.textContent = data;
+                preview.scrollTop = 0;
+            }
+            
+            navigator.clipboard.writeText(data).then(() => {
+                console.log('✅ 数据已复制到剪贴板');
+            }).catch(err => {
+                console.error('❌ 复制失败:', err);
+            });
+        }
+        
+        function downloadData() {
+            const data = TrajectoryTracker.exportData();
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `security-logs-optimized-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ 数据文件已下载');
+        }
+        
+        function clearData() {
+            if (confirm('确定要清空所有监控数据吗？此操作不可撤销。')) {
+                TrajectoryTracker.clearData();
+                updateDashboard();
+                document.getElementById('data-preview').textContent = '数据已清空';
+            }
+        }
+        
+        function refreshStats() {
+            updateDashboard();
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
