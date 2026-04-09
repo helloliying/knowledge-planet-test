@@ -278,18 +278,29 @@
     }
     
     /**
-     * 清空显示数据
+     * 清空显示数据（仅清除显示，不停止自动刷新）
      */
     function clearDisplay() {
+        console.log('清空显示数据（自动刷新继续）');
+        
+        // 清除图表显示数据
         if (trajectoryChart) {
             trajectoryChart.data.datasets[0].data = [];
             trajectoryChart.update('none');
         }
         
-        localStorage.removeItem(DISPLAY_CONFIG.sharedDataKey);
+        // 清除共享数据键（不影响主测试页面数据采集）
+        try {
+            localStorage.removeItem(DISPLAY_CONFIG.sharedDataKey);
+        } catch (error) {
+            console.warn('清除共享数据失败:', error);
+        }
+        
+        // 更新无数据消息显示
+
         updateNoDataMessage();
         
-        console.log('显示数据已清空');
+        console.log('显示数据已清空，自动刷新继续工作');
     }
     
     /**

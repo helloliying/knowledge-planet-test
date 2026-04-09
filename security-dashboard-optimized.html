@@ -416,121 +416,39 @@
         }
         
         function clearData() {
-            if (confirm('确定要清空所有轨迹数据吗？此操作将:\n1. 清除所有存储的轨迹数据\n2. 停止自动刷新显示\n3. 通知主测试页面停止采集\n\n此操作不可撤销。')) {
-                // 1. 首先停止数据显示器的自动刷新
+            if (confirm('确定要清空当前显示的轨迹数据吗？\n\n注意：这只是清除显示，数据采集和自动刷新会继续工作。')) {
+                // 1. 清除显示数据（但不停止自动刷新）
                 if (window.TrajectoryDisplay) {
-                    window.TrajectoryDisplay.stop();
+                    // 只清除显示，不停止刷新
+                    const clearFunc = window.TrajectoryDisplay.clear || 
+                                    (window.TrajectoryDisplay.clearDisplay || function() {});
+                    clearFunc.call(window.TrajectoryDisplay);
                 }
                 
-                // 2. 清除所有可能的数据存储键
-                const allStorageKeys = [
-                    'ks_shared_trajectory_data',
-                    'ks_trajectory_data',
-                    'ks_trajectory_optimized',
-                    'ks_security_logs',
-                    'ks_session_id',
-                    // 添加更多可能的存储键
-                    'ks_trajectory_stream',
-                    'ks_user_behavior',
-                    'ks_mouse_trajectory'
-                ];
-                
-                // 清除localStorage中的数据
-                allStorageKeys.forEach(key => {
-                    try {
-                        localStorage.removeItem(key);
-                        console.log(`已清除: ${key}`);
-                    } catch (error) {
-                        console.warn(`清除 ${key} 失败:`, error);
-                    }
-                });
-                
-                // 清除sessionStorage中的所有相关数据
+                // 2. 简单清除共享数据键（可选，不影响主测试页面）
                 try {
-                    // 清除所有以ks_开头的sessionStorage键
-                    for (let i = 0; i < sessionStorage.length; i++) {
-                        const key = sessionStorage.key(i);
-                        if (key && key.startsWith('ks_')) {
-                            sessionStorage.removeItem(key);
-                            console.log(`已清除sessionStorage: ${key}`);
-                        }
-                    }
+                    localStorage.removeItem('ks_shared_trajectory_data');
                 } catch (error) {
-                    console.warn('清除sessionStorage失败:', error);
+                    // 忽略错误
                 }
                 
-                // 3. 设置强力的清空标记（包含时间戳和指令）
-                const clearCommand = {
-                    command: 'CLEAR_ALL_DATA',
-                    timestamp: Date.now(),
-                    source: 'security_dashboard',
-                    expires: Date.now() + 30000 // 30秒后过期
-                };
-                
-                try {
-                    // 设置主清空标记
-                    localStorage.setItem('ks_data_cleared', JSON.stringify(clearCommand));
-                    
-                    // 设置额外的清空信号
-                    localStorage.setItem('ks_stop_tracking', 'true');
-                    localStorage.setItem('ks_clear_all', Date.now().toString());
-                    
-                    // 30秒后自动清除标记
-                    setTimeout(() => {
-                        localStorage.removeItem('ks_data_cleared');
-                        localStorage.removeItem('ks_stop_tracking');
-                        localStorage.removeItem('ks_clear_all');
-                    }, 30000);
-                } catch (error) {
-                    console.warn('设置清空标记失败:', error);
-                }
-                
-                // 4. 清除显示
-                if (window.TrajectoryDisplay) {
-                    window.TrajectoryDisplay.clear();
-                }
-                
-                // 5. 手动清除图表数据（确保立即生效）
-                try {
-                    const chart = document.getElementById('trajectory-chart');
-                    if (chart && chart.chart) {
-                        chart.chart.data.datasets[0].data = [];
-                        chart.chart.update('none');
-                    }
-                } catch (error) {
-                    // 忽略图表错误
-                }
-                
-                // 6. 更新UI显示
+                // 3. 更新UI显示
                 const statsElement = document.getElementById('trajectory-stats');
                 if (statsElement) {
                     statsElement.innerHTML = `
                         <div class="no-data-message">
-                            <div class="icon">✅</div>
-                            <p><strong>所有数据已清空</strong></p>
-                            <p>自动刷新已停止</p>
-                            <p>主测试页面已收到停止采集指令</p>
+                            <div class="icon">🔄</div>
+                            <p><strong>显示数据已清空</strong></p>
+                            <p>自动刷新继续工作中...</p>
+                            <p>请访问主测试页面生成新数据</p>
                         </div>
                     `;
                 }
                 
-                // 7. 更新时间戳显示
-                const timeElement = document.getElementById('data-timestamp');
-                if (timeElement) {
-                    timeElement.textContent = `数据已清空于: ${new Date().toLocaleTimeString()}`;
-                }
+                // 4. 显示简单消息
+                alert('🔄 显示数据已清空\n\n自动刷新继续工作，等待新数据...');
                 
-                // 8. 显示成功消息
-                alert('✅ 所有轨迹数据已成功清空！\n\n已执行的操作:\n1. 清除所有存储数据\n2. 停止自动刷新\n3. 通知主测试页面\n4. 更新UI显示\n\n数据不会重新出现。');
-                
-                // 9. 在控制台记录详细日志
-                console.log('🚨 数据清空操作已执行:', {
-                    时间: new Date().toISOString(),
-                    清除的存储键: allStorageKeys,
-                    设置的标记: ['ks_data_cleared', 'ks_stop_tracking', 'ks_clear_all'],
-                    自动刷新: '已停止',
-                    UI更新: '已完成'
-                });
+                console.log('显示数据已清空，自动刷新继续');
             }
         }
         
