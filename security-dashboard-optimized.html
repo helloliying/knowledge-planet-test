@@ -492,49 +492,105 @@
             }
         });
         
-        // 指纹信息显示函数
+        // 指纹信息显示函数 - 修复版
         function displayFingerprintInfo() {
             try {
-                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
-                if (!sharedData) {
+                const infoElement = document.getElementById('fingerprint-info');
+                if (!infoElement) {
+                    console.warn('找不到指纹信息显示元素');
                     return;
                 }
                 
-                const data = JSON.parse(sharedData);
+                // 尝试获取共享数据
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                
+                if (!sharedData) {
+                    infoElement.innerHTML = `
+                        <div style="font-size: 0.9rem; color: #666;">
+                            <p>⏳ 等待主测试页面数据...</p>
+                            <p>请访问主测试页面并移动鼠标</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(sharedData);
+                } catch (error) {
+                    infoElement.innerHTML = `
+                        <div style="font-size: 0.9rem; color: #f59e0b;">
+                            <p>⚠️ 数据格式错误</p>
+                            <p>请刷新页面重试</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 const fingerprint = data.fingerprint;
                 
                 if (!fingerprint) {
+                    infoElement.innerHTML = `
+                        <div style="font-size: 0.9rem; color: #f59e0b;">
+                            <p>⚠️ 未检测到指纹信息</p>
+                            <p>可能原因:</p>
+                            <ul style="margin-left: 1.2rem; margin-top: 0.5rem;">
+                                <li>主测试页面使用旧版本</li>
+                                <li>指纹采集被浏览器阻止</li>
+                                <li>请刷新主测试页面</li>
+                            </ul>
+                        </div>
+                    `;
                     return;
                 }
                 
-                const infoElement = document.getElementById('fingerprint-info');
-                if (!infoElement) return;
-                
-                // 解析User Agent信息
+                // 解析指纹信息
                 const uaInfo = fingerprint.parsedUA || {};
                 const screenInfo = fingerprint.screen || {};
                 const deviceInfo = fingerprint.device || {};
+                const timeLocation = fingerprint.timeLocation || {};
+                const browserInfo = fingerprint.browser || {};
                 
                 // 创建指纹信息HTML
                 const html = `
                     <div style="font-size: 0.9rem;">
-                        <p><strong>浏览器:</strong> ${uaInfo.browser || '未知'} ${uaInfo.browserVersion || ''}</p>
-                        <p><strong>操作系统:</strong> ${uaInfo.os || '未知'} ${uaInfo.osVersion || ''}</p>
-                        <p><strong>设备类型:</strong> ${uaInfo.deviceType || '未知'}</p>
-                        <p><strong>屏幕:</strong> ${screenInfo.width} × ${screenInfo.height}</p>
-                        <p><strong>像素比:</strong> ${screenInfo.devicePixelRatio || 1}</p>
-                        <p><strong>颜色深度:</strong> ${screenInfo.colorDepth || '未知'}</p>
-                        <p><strong>CPU核心:</strong> ${deviceInfo.hardwareConcurrency || '未知'}</p>
-                        <p><strong>设备内存:</strong> ${deviceInfo.deviceMemory || '未知'} GB</p>
-                        <p><strong>时区:</strong> ${fingerprint.timeLocation?.timezone || '未知'}</p>
-                        <p><strong>语言:</strong> ${fingerprint.browser?.language || '未知'}</p>
+                        <p><strong>🔍 指纹哈希:</strong> <code style="font-size: 0.8rem;">${fingerprint.hash || '未知'}</code></p>
+                        <hr style="margin: 8px 0; border: none; border-top: 1px solid #334155;">
+                        <p><strong>🌐 浏览器:</strong> ${uaInfo.browser || '未知'} ${uaInfo.browserVersion || ''}</p>
+                        <p><strong>💻 操作系统:</strong> ${uaInfo.os || '未知'} ${uaInfo.osVersion || ''}</p>
+                        <p><strong>📱 设备类型:</strong> ${uaInfo.deviceType || '未知'}</p>
+                        <p><strong>🖥️ 屏幕分辨率:</strong> ${screenInfo.width || '未知'} × ${screenInfo.height || '未知'}</p>
+                        <p><strong>🔍 像素密度:</strong> ${screenInfo.devicePixelRatio || 1}</p>
+                        <p><strong>🎨 颜色深度:</strong> ${screenInfo.colorDepth || '未知'} 位</p>
+                        <p><strong>⚡ CPU核心:</strong> ${deviceInfo.hardwareConcurrency || '未知'}</p>
+                        <p><strong>💾 设备内存:</strong> ${deviceInfo.deviceMemory || '未知'} GB</p>
+                        <p><strong>🌍 时区:</strong> ${timeLocation.timezone || '未知'}</p>
+                        <p><strong>🗣️ 语言:</strong> ${browserInfo.language || '未知'}</p>
+                        <p><strong>📡 User Agent:</strong> <span style="font-size: 0.8rem; color: #94a3b8;">${browserInfo.userAgent ? browserInfo.userAgent.substring(0, 50) + '...' : '未知'}</span></p>
                     </div>
                 `;
                 
                 infoElement.innerHTML = html;
                 
+                // 在控制台记录
+                console.log('指纹信息已显示:', {
+                    哈希: fingerprint.hash,
+                    浏览器: uaInfo.browser,
+                    操作系统: uaInfo.os,
+                    设备类型: uaInfo.deviceType
+                });
+                
             } catch (error) {
                 console.error('显示指纹信息失败:', error);
+                const infoElement = document.getElementById('fingerprint-info');
+                if (infoElement) {
+                    infoElement.innerHTML = `
+                        <div style="font-size: 0.9rem; color: #ef4444;">
+                            <p>❌ 显示指纹信息时出错</p>
+                            <p>错误: ${error.message}</p>
+                        </div>
+                    `;
+                }
             }
         }
         

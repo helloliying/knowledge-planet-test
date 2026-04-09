@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检查指纹数据结构</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .data-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow: auto; max-height: 400px; }
+        button { margin: 10px 5px; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+    <h1>检查指纹数据结构</h1>
+    
+    <div class="data-section">
+        <h3>步骤1: 检查localStorage中的共享数据</h3>
+        <button onclick="checkSharedData()">检查共享数据</button>
+        <div id="shared-data-result"></div>
+    </div>
+    
+    <div class="data-section">
+        <h3>步骤2: 检查指纹数据结构</h3>
+        <button onclick="checkFingerprintStructure()">检查指纹结构</button>
+        <div id="fingerprint-structure-result"></div>
+    </div>
+    
+    <div class="data-section">
+        <h3>步骤3: 模拟安全仪表板显示</h3>
+        <button onclick="simulateDashboardDisplay()">模拟显示</button>
+        <div id="simulated-display"></div>
+    </div>
+    
+    <div class="data-section">
+        <h3>步骤4: 诊断问题</h3>
+        <button onclick="diagnoseProblem()">诊断问题</button>
+        <div id="diagnosis-result"></div>
+    </div>
+    
+    <script>
+        // 步骤1: 检查共享数据
+        function checkSharedData() {
+            const resultDiv = document.getElementById('shared-data-result');
+            
+            try {
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                
+                if (!sharedData) {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ 未找到共享数据</p>';
+                    return;
+                }
+                
+                const parsed = JSON.parse(sharedData);
+                
+                resultDiv.innerHTML = `
+                    <p style="color: green;">✅ 找到共享数据</p>
+                    <p>数据键: ks_shared_trajectory_data</p>
+                    <p>最后更新: ${parsed.summary?.lastUpdated || '未知'}</p>
+                    <p>轨迹点数: ${parsed.summary?.totalPoints || 0}</p>
+                    <p>是否有指纹: ${parsed.fingerprint ? '✅ 是' : '❌ 否'}</p>
+                    <p>指纹哈希: ${parsed.fingerprint?.hash || '无'}</p>
+                    <details>
+                        <summary>查看完整数据</summary>
+                        <pre>${JSON.stringify(parsed, null, 2)}</pre>
+                    </details>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ 检查失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 步骤2: 检查指纹数据结构
+        function checkFingerprintStructure() {
+            const resultDiv = document.getElementById('fingerprint-structure-result');
+            
+            try {
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                
+                if (!sharedData) {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ 无共享数据</p>';
+                    return;
+                }
+                
+                const parsed = JSON.parse(sharedData);
+                const fingerprint = parsed.fingerprint;
+                
+                if (!fingerprint) {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ 指纹数据不存在</p>';
+                    return;
+                }
+                
+                // 分析指纹结构
+                const structure = {
+                    hasBasicInfo: !!fingerprint.browser,
+                    hasScreenInfo: !!fingerprint.screen,
+                    hasDeviceInfo: !!fingerprint.device,
+                    hasTimeLocation: !!fingerprint.timeLocation,
+                    hasParsedUA: !!fingerprint.parsedUA,
+                    hasHash: !!fingerprint.hash,
+                    browserKeys: fingerprint.browser ? Object.keys(fingerprint.browser) : [],
+                    screenKeys: fingerprint.screen ? Object.keys(fingerprint.screen) : [],
+                    parsedUAKeys: fingerprint.parsedUA ? Object.keys(fingerprint.parsedUA) : []
+                };
+                
+                resultDiv.innerHTML = `
+                    <p style="color: green;">✅ 指纹数据存在</p>
+                    <p>哈希值: ${fingerprint.hash || '无'}</p>
+                    <p>收集时间: ${fingerprint.collectedAt || '未知'}</p>
+                    <hr>
+                    <p><strong>数据结构分析:</strong></p>
+                    <ul>
+                        <li>基础浏览器信息: ${structure.hasBasicInfo ? '✅' : '❌'}</li>
+                        <li>屏幕信息: ${structure.hasScreenInfo ? '✅' : '❌'}</li>
+                        <li>设备信息: ${structure.hasDeviceInfo ? '✅' : '❌'}</li>
+                        <li>时间位置信息: ${structure.hasTimeLocation ? '✅' : '❌'}</li>
+                        <li>解析的UA: ${structure.hasParsedUA ? '✅' : '❌'}</li>
+                        <li>哈希值: ${structure.hasHash ? '✅' : '❌'}</li>
+                    </ul>
+                    <details>
+                        <summary>查看指纹详情</summary>
+                        <pre>${JSON.stringify(fingerprint, null, 2)}</pre>
+                    </details>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ 检查失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 步骤3: 模拟安全仪表板显示
+        function simulateDashboardDisplay() {
+            const resultDiv = document.getElementById('simulated-display');
+            
+            try {
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                
+                if (!sharedData) {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ 无共享数据</p>';
+                    return;
+                }
+                
+                const data = JSON.parse(sharedData);
+                const fingerprint = data.fingerprint;
+                
+                if (!fingerprint) {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ 指纹数据不存在</p>';
+                    return;
+                }
+                
+                // 使用安全仪表板的显示逻辑
+                const uaInfo = fingerprint.parsedUA || {};
+                const screenInfo = fingerprint.screen || {};
+                const deviceInfo = fingerprint.device || {};
+                const timeLocation = fingerprint.timeLocation || {};
+                const browserInfo = fingerprint.browser || {};
+                
+                const html = `
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #ddd;">
+                        <h4 style="margin-top: 0;">模拟安全仪表板显示</h4>
+                        <div style="font-size: 0.9rem;">
+                            <p><strong>浏览器:</strong> ${uaInfo.browser || '未知'} ${uaInfo.browserVersion || ''}</p>
+                            <p><strong>操作系统:</strong> ${uaInfo.os || '未知'} ${uaInfo.osVersion || ''}</p>
+                            <p><strong>设备类型:</strong> ${uaInfo.deviceType || '未知'}</p>
+                            <p><strong>屏幕:</strong> ${screenInfo.width || '未知'} × ${screenInfo.height || '未知'}</p>
+                            <p><strong>像素比:</strong> ${screenInfo.devicePixelRatio || 1}</p>
+                            <p><strong>颜色深度:</strong> ${screenInfo.colorDepth || '未知'}</p>
+                            <p><strong>CPU核心:</strong> ${deviceInfo.hardwareConcurrency || '未知'}</p>
+                            <p><strong>设备内存:</strong> ${deviceInfo.deviceMemory || '未知'} GB</p>
+                            <p><strong>时区:</strong> ${timeLocation.timezone || '未知'}</p>
+                            <p><strong>语言:</strong> ${browserInfo.language || '未知'}</p>
+                            <p><strong>指纹哈希:</strong> <code>${fingerprint.hash || '无'}</code></p>
+                        </div>
+                    </div>
+                `;
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ 模拟显示失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 步骤4: 诊断问题
+        function diagnoseProblem() {
+            const resultDiv = document.getElementById('diagnosis-result');
+            
+            try {
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                
+                if (!sharedData) {
+                    resultDiv.innerHTML = `
+                        <p style="color: red;">❌ 诊断结果: 无共享数据</p>
+                        <p>可能原因:</p>
+                        <ol>
+                            <li>主测试页面未运行</li>
+                            <li>localStorage被清除</li>
+                            <li>浏览器阻止了localStorage</li>
+                        </ol>
+                        <p>解决方案: 访问主测试页面并移动鼠标</p>
+                    `;
+                    return;
+                }
+                
+                const data = JSON.parse(sharedData);
+                const fingerprint = data.fingerprint;
+                
+                if (!fingerprint) {
+                    resultDiv.innerHTML = `
+                        <p style="color: orange;">⚠️ 诊断结果: 有共享数据但无指纹</p>
+                        <p>可能原因:</p>
+                        <ol>
+                            <li>主测试页面使用旧版本跟踪器</li>
+                            <li>指纹采集被浏览器阻止</li>
+                            <li>JavaScript错误导致指纹采集失败</li>
+                        </ol>
+                        <p>解决方案: 检查主测试页面控制台是否有错误</p>
+                    `;
+                    return;
+                }
+                
+                // 检查指纹结构
+                const issues = [];
+                
+                if (!fingerprint.parsedUA) issues.push('缺少解析的UA信息');
+                if (!fingerprint.screen) issues.push('缺少屏幕信息');
+                if (!fingerprint.hash) issues.push('缺少哈希值');
+                if (!fingerprint.browser?.userAgent) issues.push('缺少User Agent');
+                
+                if (issues.length === 0) {
+                    resultDiv.innerHTML = `
+                        <p style="color: green;">✅ 诊断结果: 指纹数据完整</p>
+                        <p>问题可能在于安全仪表板的显示逻辑</p>
+                        <p>建议检查:</p>
+                        <ol>
+                            <li>安全仪表板是否加载了正确的JavaScript</li>
+                            <li>displayFingerprintInfo函数是否被调用</li>
+                            <li>页面元素ID是否正确</li>
+                        </ol>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p style="color: orange;">⚠️ 诊断结果: 指纹数据不完整</p>
+                        <p>发现的问题:</p>
+                        <ul>
+                            ${issues.map(issue => `<li>${issue}</li>`).join('')}
+                        </ul>
+                        <p>可能原因: 指纹采集过程中出现错误</p>
+                        <p>解决方案: 检查主测试页面控制台错误</p>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ 诊断失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 自动运行第一步
+        window.addEventListener('DOMContentLoaded', function() {
+            checkSharedData();
+        });
+    </script>
+</body>
+</html>
