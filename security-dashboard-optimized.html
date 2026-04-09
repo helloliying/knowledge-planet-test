@@ -356,6 +356,16 @@
                     </ol>
                 </div>
             </div>
+            
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">👤</div>
+                    <h3 class="card-title">用户指纹信息</h3>
+                </div>
+                <div id="fingerprint-info">
+                    <p>等待指纹数据...</p>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -481,6 +491,58 @@
                 window.TrajectoryDisplay.stop();
             }
         });
+        
+        // 指纹信息显示函数
+        function displayFingerprintInfo() {
+            try {
+                const sharedData = localStorage.getItem('ks_shared_trajectory_data');
+                if (!sharedData) {
+                    return;
+                }
+                
+                const data = JSON.parse(sharedData);
+                const fingerprint = data.fingerprint;
+                
+                if (!fingerprint) {
+                    return;
+                }
+                
+                const infoElement = document.getElementById('fingerprint-info');
+                if (!infoElement) return;
+                
+                // 解析User Agent信息
+                const uaInfo = fingerprint.parsedUA || {};
+                const screenInfo = fingerprint.screen || {};
+                const deviceInfo = fingerprint.device || {};
+                
+                // 创建指纹信息HTML
+                const html = `
+                    <div style="font-size: 0.9rem;">
+                        <p><strong>浏览器:</strong> ${uaInfo.browser || '未知'} ${uaInfo.browserVersion || ''}</p>
+                        <p><strong>操作系统:</strong> ${uaInfo.os || '未知'} ${uaInfo.osVersion || ''}</p>
+                        <p><strong>设备类型:</strong> ${uaInfo.deviceType || '未知'}</p>
+                        <p><strong>屏幕:</strong> ${screenInfo.width} × ${screenInfo.height}</p>
+                        <p><strong>像素比:</strong> ${screenInfo.devicePixelRatio || 1}</p>
+                        <p><strong>颜色深度:</strong> ${screenInfo.colorDepth || '未知'}</p>
+                        <p><strong>CPU核心:</strong> ${deviceInfo.hardwareConcurrency || '未知'}</p>
+                        <p><strong>设备内存:</strong> ${deviceInfo.deviceMemory || '未知'} GB</p>
+                        <p><strong>时区:</strong> ${fingerprint.timeLocation?.timezone || '未知'}</p>
+                        <p><strong>语言:</strong> ${fingerprint.browser?.language || '未知'}</p>
+                    </div>
+                `;
+                
+                infoElement.innerHTML = html;
+                
+            } catch (error) {
+                console.error('显示指纹信息失败:', error);
+            }
+        }
+        
+        // 定期检查并显示指纹信息
+        setInterval(displayFingerprintInfo, 2000);
+        
+        // 初始显示
+        setTimeout(displayFingerprintInfo, 1000);
     </script>
 </body>
 </html>
