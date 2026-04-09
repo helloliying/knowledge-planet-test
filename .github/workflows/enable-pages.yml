@@ -1,0 +1,24 @@
+name: Enable GitHub Pages
+
+on:
+  workflow_dispatch:  # 只允许手动触发
+
+jobs:
+  enable-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Create empty commit to trigger Pages
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git commit --allow-empty -m "Trigger GitHub Pages deployment"
+          git push
+      
+      - name: Wait for Pages deployment
+        run: |
+          echo "Waiting for GitHub Pages to deploy..."
+          sleep 30
+          echo "Pages should be available now at: https://helloliying.github.io/knowledge-planet-test/"
