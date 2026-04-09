@@ -281,15 +281,35 @@
      * 清空显示数据
      */
     function clearDisplay() {
+        // 停止刷新
+        stopRefresh();
+        
+        // 清除图表数据
         if (trajectoryChart) {
             trajectoryChart.data.datasets[0].data = [];
             trajectoryChart.update('none');
         }
         
-        localStorage.removeItem(DISPLAY_CONFIG.sharedDataKey);
+        // 清除所有可能的数据存储键
+        const allStorageKeys = [
+            DISPLAY_CONFIG.sharedDataKey,
+            'ks_trajectory_data',
+            'ks_trajectory_optimized',
+            'ks_security_logs',
+            'ks_session_id'
+        ];
+        
+        allStorageKeys.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        // 清除sessionStorage
+        sessionStorage.removeItem('ks_session_id');
+        
+        // 更新显示
         updateNoDataMessage();
         
-        console.log('显示数据已清空');
+        console.log('显示数据已清空，清除的存储键:', allStorageKeys.join(', '));
     }
     
     /**

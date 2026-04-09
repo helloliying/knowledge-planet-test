@@ -56,6 +56,9 @@
         
         console.log('🚀 增强版轨迹跟踪器初始化');
         
+        // 检查是否有清空标记
+        checkClearFlag();
+        
         // 加载之前保存的数据
         loadSavedData();
         
@@ -67,6 +70,9 @@
         
         // 启动自动保存
         startAutoSave();
+        
+        // 启动定期清空标记检查
+        startClearFlagMonitor();
         
         console.log('✅ 增强版轨迹跟踪器已启动');
     }
@@ -109,6 +115,27 @@
             console.log(`🧹 清理了 ${oldLength - trajectoryData.length} 条过期数据`);
             saveData();
         }
+    }
+    
+    /**
+     * 检查清空标记
+     */
+    function checkClearFlag() {
+        const clearFlag = localStorage.getItem('ks_data_cleared');
+        if (clearFlag) {
+            console.log('检测到数据清空标记，清除本地数据...');
+            clearData();
+            // 清除标记
+            localStorage.removeItem('ks_data_cleared');
+        }
+    }
+    
+    /**
+     * 启动清空标记监控
+     */
+    function startClearFlagMonitor() {
+        // 每2秒检查一次清空标记
+        setInterval(checkClearFlag, 2000);
     }
     
     /**
