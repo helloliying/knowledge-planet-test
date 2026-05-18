@@ -10,7 +10,7 @@
     // 配置
     const CROSS_DEVICE_CONFIG = {
         // 是否启用
-        enabled: true,
+        enabled: false,
         
         // GitHub Gist ID（需要替换为真实的）
         gistId: '', // 留空，将从URL参数或localStorage获取

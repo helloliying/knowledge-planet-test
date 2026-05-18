@@ -10,7 +10,7 @@
     // 配置
     const PUBLIC_TRACKER_CONFIG = {
         // 是否启用
-        enabled: true,
+        enabled: false,
         
         // 使用公开的GitHub Gist作为存储
         // 这是一个预先创建的公开Gist，所有人都可以读取和写入

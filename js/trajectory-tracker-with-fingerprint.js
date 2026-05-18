@@ -37,6 +37,7 @@
     let saveTimer = null;
     let cloudTimer = null;
     let isCloudSyncing = false;
+    let lastCloudSyncAttemptAt = 0;
     let isInitialized = false;
     let fingerprintData = null;
 
@@ -290,6 +291,8 @@
         }
 
         window.addEventListener('beforeunload', handleBeforeUnload);
+        document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+        window.addEventListener('pagehide', handlePageHide, { passive: true });
         setInterval(cleanupOldData, TRACKER_CONFIG.dataRetentionTime / 2);
     }
 
@@ -359,6 +362,7 @@
         }
 
         updateSharedData();
+        maybeFastSync();
     }
 
     function cleanupOldData() {
@@ -443,12 +447,31 @@
         }, TRACKER_CONFIG.cloudSync.syncInterval);
     }
 
+    function maybeFastSync() {
+        const cloud = getCloudConfig();
+        if (!cloud.enabled || isCloudSyncing || cloudBuffer.length === 0) {
+            return;
+        }
+
+        const now = Date.now();
+        const enoughBuffered = cloudBuffer.length >= Math.max(20, Math.floor(TRACKER_CONFIG.cloudSync.batchSize / 2));
+        if (!enoughBuffered || now - lastCloudSyncAttemptAt < 2000) {
+            return;
+        }
+
+        lastCloudSyncAttemptAt = now;
+        syncCloudBuffer().catch(() => {
+            // Swallow to avoid unhandled rejections from best-effort fast sync.
+        });
+    }
+
     async function syncCloudBuffer() {
         const cloud = getCloudConfig();
         if (!cloud.enabled || isCloudSyncing || cloudBuffer.length === 0) {
             return;
         }
 
+        lastCloudSyncAttemptAt = Date.now();
         isCloudSyncing = true;
         const batch = cloudBuffer.slice(0, TRACKER_CONFIG.cloudSync.batchSize);
 
@@ -511,6 +534,25 @@
 
     function handleBeforeUnload() {
         saveData();
+        syncCloudBuffer().catch(() => {
+            // Best effort before unload.
+        });
+    }
+
+    function handleVisibilityChange() {
+        if (document.visibilityState === 'hidden') {
+            saveData();
+            syncCloudBuffer().catch(() => {
+                // Best effort on tab hide.
+            });
+        }
+    }
+
+    function handlePageHide() {
+        saveData();
+        syncCloudBuffer().catch(() => {
+            // Best effort on page hide.
+        });
     }
 
     function getTrajectoryStream(limit) {
@@ -569,7 +611,7 @@
     }
 
     function setCloudConfig(provider, supabaseUrl, supabaseAnonKey) {
-        localStorage.setItem(TRACKER_CONFIG.cloudSync.providerStorageKey, (provider || 'local').toLowerCase());
+        localStorage.setItem(TRACKER_CONFIG.cloudSync.providerStorageKey, (provider || 'supabase').toLowerCase());
         if (supabaseUrl) {
             localStorage.setItem(TRACKER_CONFIG.cloudSync.supabaseUrlStorageKey, normalizeSupabaseBaseUrl(supabaseUrl));
         }

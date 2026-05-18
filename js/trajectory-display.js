@@ -507,6 +507,8 @@
     function setCloudConfig(provider, supabaseUrl, supabaseAnonKey) {
         if (provider) {
             localStorage.setItem(DISPLAY_CONFIG.cloud.providerStorageKey, String(provider).toLowerCase());
+        } else {
+            localStorage.setItem(DISPLAY_CONFIG.cloud.providerStorageKey, 'supabase');
         }
         if (supabaseUrl) {
             localStorage.setItem(DISPLAY_CONFIG.cloud.supabaseUrlStorageKey, normalizeSupabaseBaseUrl(String(supabaseUrl)));
