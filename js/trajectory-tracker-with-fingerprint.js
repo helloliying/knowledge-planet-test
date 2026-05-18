@@ -90,13 +90,18 @@
 
     function ensureDefaultCloudConfig() {
         try {
-            if (!localStorage.getItem(TRACKER_CONFIG.cloudSync.providerStorageKey)) {
+            const currentProvider = (localStorage.getItem(TRACKER_CONFIG.cloudSync.providerStorageKey) || '').trim().toLowerCase();
+            if (!currentProvider || currentProvider !== 'supabase') {
                 localStorage.setItem(TRACKER_CONFIG.cloudSync.providerStorageKey, DEFAULT_CLOUD_CONFIG.provider);
             }
-            if (!localStorage.getItem(TRACKER_CONFIG.cloudSync.supabaseUrlStorageKey)) {
+
+            const currentUrl = normalizeSupabaseBaseUrl(localStorage.getItem(TRACKER_CONFIG.cloudSync.supabaseUrlStorageKey) || '');
+            if (!currentUrl || !/\.supabase\.co$/i.test(currentUrl)) {
                 localStorage.setItem(TRACKER_CONFIG.cloudSync.supabaseUrlStorageKey, DEFAULT_CLOUD_CONFIG.supabaseUrl);
             }
-            if (!localStorage.getItem(TRACKER_CONFIG.cloudSync.supabaseAnonKeyStorageKey)) {
+
+            const currentKey = (localStorage.getItem(TRACKER_CONFIG.cloudSync.supabaseAnonKeyStorageKey) || '').trim();
+            if (!currentKey || currentKey.length < 40) {
                 localStorage.setItem(TRACKER_CONFIG.cloudSync.supabaseAnonKeyStorageKey, DEFAULT_CLOUD_CONFIG.supabaseAnonKey);
             }
         } catch (error) {

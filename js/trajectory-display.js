@@ -42,13 +42,18 @@
 
     function ensureDefaultCloudConfig() {
         try {
-            if (!localStorage.getItem(DISPLAY_CONFIG.cloud.providerStorageKey)) {
+            const currentProvider = (localStorage.getItem(DISPLAY_CONFIG.cloud.providerStorageKey) || '').trim().toLowerCase();
+            if (!currentProvider || currentProvider !== 'supabase') {
                 localStorage.setItem(DISPLAY_CONFIG.cloud.providerStorageKey, DEFAULT_CLOUD_CONFIG.provider);
             }
-            if (!localStorage.getItem(DISPLAY_CONFIG.cloud.supabaseUrlStorageKey)) {
+
+            const currentUrl = normalizeSupabaseBaseUrl(localStorage.getItem(DISPLAY_CONFIG.cloud.supabaseUrlStorageKey) || '');
+            if (!currentUrl || !/\.supabase\.co$/i.test(currentUrl)) {
                 localStorage.setItem(DISPLAY_CONFIG.cloud.supabaseUrlStorageKey, DEFAULT_CLOUD_CONFIG.supabaseUrl);
             }
-            if (!localStorage.getItem(DISPLAY_CONFIG.cloud.supabaseAnonKeyStorageKey)) {
+
+            const currentKey = (localStorage.getItem(DISPLAY_CONFIG.cloud.supabaseAnonKeyStorageKey) || '').trim();
+            if (!currentKey || currentKey.length < 40) {
                 localStorage.setItem(DISPLAY_CONFIG.cloud.supabaseAnonKeyStorageKey, DEFAULT_CLOUD_CONFIG.supabaseAnonKey);
             }
         } catch (error) {
