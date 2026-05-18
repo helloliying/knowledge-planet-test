@@ -1,13 +1,12 @@
--- Supabase 轨迹数据表设置
--- 在 Supabase SQL 编辑器中运行此脚本
+-- Supabase setup for cross-device trajectory tracking
+-- Run this in Supabase SQL Editor.
 
--- 创建轨迹点表
-CREATE TABLE IF NOT EXISTS trajectory_points (
+CREATE TABLE IF NOT EXISTS public.trajectory_points (
     id BIGSERIAL PRIMARY KEY,
     user_id VARCHAR(100) NOT NULL,
     device_id VARCHAR(100) NOT NULL,
     page_url TEXT NOT NULL,
-    event_type VARCHAR(20) NOT NULL, -- 'mousemove', 'mousedown', 'scroll'
+    event_type VARCHAR(20) NOT NULL, -- mousemove, mousedown, scroll
     x INTEGER,
     y INTEGER,
     page_x INTEGER,
@@ -23,60 +22,59 @@ CREATE TABLE IF NOT EXISTS trajectory_points (
     color_depth INTEGER,
     timezone VARCHAR(100),
     language VARCHAR(50),
-    timestamp BIGINT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    "timestamp" BIGINT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 创建索引以提高查询性能
-CREATE INDEX IF NOT EXISTS idx_trajectory_user_id ON trajectory_points(user_id);
-CREATE INDEX IF NOT EXISTS idx_trajectory_device_id ON trajectory_points(device_id);
-CREATE INDEX IF NOT EXISTS idx_trajectory_timestamp ON trajectory_points(timestamp);
-CREATE INDEX IF NOT EXISTS idx_trajectory_created_at ON trajectory_points(created_at);
+CREATE INDEX IF NOT EXISTS idx_trajectory_user_id ON public.trajectory_points(user_id);
+CREATE INDEX IF NOT EXISTS idx_trajectory_device_id ON public.trajectory_points(device_id);
+CREATE INDEX IF NOT EXISTS idx_trajectory_timestamp ON public.trajectory_points("timestamp");
+CREATE INDEX IF NOT EXISTS idx_trajectory_created_at ON public.trajectory_points(created_at);
 
--- 创建统计视图
-CREATE OR REPLACE VIEW trajectory_stats AS
-SELECT 
+CREATE OR REPLACE VIEW public.trajectory_stats AS
+SELECT
     user_id,
     device_id,
-    COUNT(*) as total_points,
-    COUNT(CASE WHEN event_type = 'mousemove' THEN 1 END) as move_points,
-    COUNT(CASE WHEN event_type = 'mousedown' THEN 1 END) as click_points,
-    MIN(timestamp) as first_seen,
-    MAX(timestamp) as last_seen,
-    MAX(created_at) as last_updated
-FROM trajectory_points
+    COUNT(*) AS total_points,
+    COUNT(CASE WHEN event_type = 'mousemove' THEN 1 END) AS move_points,
+    COUNT(CASE WHEN event_type = 'mousedown' THEN 1 END) AS click_points,
+    MIN("timestamp") AS first_seen,
+    MAX("timestamp") AS last_seen,
+    MAX(created_at) AS last_updated
+FROM public.trajectory_points
 GROUP BY user_id, device_id;
 
--- 创建最近活动视图
-CREATE OR REPLACE VIEW recent_activity AS
-SELECT 
+CREATE OR REPLACE VIEW public.recent_activity AS
+SELECT
     user_id,
     device_id,
     page_url,
     event_type,
-    COUNT(*) as event_count,
-    MAX(timestamp) as last_event_time
-FROM trajectory_points
-WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000
+    COUNT(*) AS event_count,
+    MAX("timestamp") AS last_event_time
+FROM public.trajectory_points
+WHERE "timestamp" > EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000
 GROUP BY user_id, device_id, page_url, event_type;
 
--- 启用行级安全 (RLS)
-ALTER TABLE trajectory_points ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trajectory_points ENABLE ROW LEVEL SECURITY;
 
--- 创建插入策略（允许任何人插入数据）
-CREATE POLICY "允许插入轨迹数据" ON trajectory_points
-    FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_insert_trajectory_points" ON public.trajectory_points;
+DROP POLICY IF EXISTS "allow_select_trajectory_points" ON public.trajectory_points;
+DROP POLICY IF EXISTS "allow_delete_own_trajectory_points" ON public.trajectory_points;
 
--- 创建读取策略（允许任何人读取数据）
-CREATE POLICY "允许读取轨迹数据" ON trajectory_points
-    FOR SELECT USING (true);
+CREATE POLICY "allow_insert_trajectory_points" ON public.trajectory_points
+    FOR INSERT
+    WITH CHECK (true);
 
--- 创建删除策略（仅允许删除自己的数据）
-CREATE POLICY "允许删除自己的数据" ON trajectory_points
-    FOR DELETE USING (user_id = current_setting('app.user_id', true));
+CREATE POLICY "allow_select_trajectory_points" ON public.trajectory_points
+    FOR SELECT
+    USING (true);
 
--- 创建函数：获取用户轨迹数据
-CREATE OR REPLACE FUNCTION get_user_trajectory(
+CREATE POLICY "allow_delete_own_trajectory_points" ON public.trajectory_points
+    FOR DELETE
+    USING (user_id = current_setting('app.user_id', true));
+
+CREATE OR REPLACE FUNCTION public.get_user_trajectory(
     p_user_id VARCHAR DEFAULT NULL,
     p_limit INTEGER DEFAULT 1000
 )
@@ -88,13 +86,13 @@ RETURNS TABLE (
     event_type VARCHAR,
     x INTEGER,
     y INTEGER,
-    timestamp BIGINT,
-    created_at TIMESTAMP WITH TIME ZONE
+    event_ts BIGINT,
+    created_at TIMESTAMPTZ
 ) AS $$
 BEGIN
     IF p_user_id IS NULL THEN
         RETURN QUERY
-        SELECT 
+        SELECT
             tp.id,
             tp.user_id,
             tp.device_id,
@@ -102,14 +100,14 @@ BEGIN
             tp.event_type,
             tp.x,
             tp.y,
-            tp.timestamp,
+            tp."timestamp" AS event_ts,
             tp.created_at
-        FROM trajectory_points tp
-        ORDER BY tp.timestamp DESC
+        FROM public.trajectory_points tp
+        ORDER BY tp."timestamp" DESC
         LIMIT p_limit;
     ELSE
         RETURN QUERY
-        SELECT 
+        SELECT
             tp.id,
             tp.user_id,
             tp.device_id,
@@ -117,48 +115,25 @@ BEGIN
             tp.event_type,
             tp.x,
             tp.y,
-            tp.timestamp,
+            tp."timestamp" AS event_ts,
             tp.created_at
-        FROM trajectory_points tp
+        FROM public.trajectory_points tp
         WHERE tp.user_id = p_user_id
-        ORDER BY tp.timestamp DESC
+        ORDER BY tp."timestamp" DESC
         LIMIT p_limit;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
--- 创建函数：清理旧数据（保留30天）
-CREATE OR REPLACE FUNCTION cleanup_old_trajectory_data()
+CREATE OR REPLACE FUNCTION public.cleanup_old_trajectory_data()
 RETURNS INTEGER AS $$
 DECLARE
     deleted_count INTEGER;
 BEGIN
-    DELETE FROM trajectory_points
-    WHERE timestamp < EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000;
-    
+    DELETE FROM public.trajectory_points
+    WHERE "timestamp" < EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000;
+
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
     RETURN deleted_count;
 END;
 $$ LANGUAGE plpgsql;
-
--- 创建定时任务（每天清理一次）
--- 注意：Supabase 需要配置 pg_cron 扩展
--- 在 Supabase 中启用 pg_cron 扩展后运行：
--- SELECT cron.schedule('cleanup-old-trajectory-data', '0 0 * * *', 'SELECT cleanup_old_trajectory_data();');
-
--- 测试数据插入
-INSERT INTO trajectory_points (
-    user_id, device_id, page_url, event_type, x, y, timestamp, user_agent
-) VALUES (
-    'test_user_1', 'test_device_1', 'https://example.com', 'mousemove', 100, 200, EXTRACT(EPOCH FROM NOW()) * 1000, 'Test Browser'
-) ON CONFLICT DO NOTHING;
-
--- 查看表结构
-SELECT 
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_name = 'trajectory_points'
-ORDER BY ordinal_position;

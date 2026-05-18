@@ -1,1081 +1,605 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨设备轨迹监控仪表板 - GitHub Gist版</title>
+    <title>Cross-Device Trajectory Dashboard</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            min-height: 100vh;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
+            color: #0f172a;
             padding: 20px;
+            min-height: 100vh;
         }
-        
-        .dashboard-container {
+
+        .app {
             max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: #f8fafc;
+            border-radius: 16px;
             overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
         }
-        
-        .dashboard-header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 30px 40px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        .header {
+            background: linear-gradient(120deg, #1d4ed8 0%, #1e40af 100%);
+            color: #ffffff;
+            padding: 24px;
         }
-        
-        .dashboard-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .dashboard-header h1 .icon {
-            font-size: 2rem;
-        }
-        
-        .dashboard-header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            max-width: 800px;
-        }
-        
-        .dashboard-controls {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .control-btn {
-            padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-        }
-        
-        .control-btn.primary {
-            background: #4CAF50;
-            border-color: #4CAF50;
-        }
-        
-        .control-btn.warning {
-            background: #ff9800;
-            border-color: #ff9800;
-        }
-        
-        .control-btn.danger {
-            background: #f44336;
-            border-color: #f44336;
-        }
-        
-        .dashboard-content {
-            padding: 30px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-        }
-        
-        .dashboard-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .dashboard-card.full-width {
-            grid-column: span 2;
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .card-title {
-            font-size: 1.4rem;
-            color: #1e3c72;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .card-icon {
-            font-size: 1.5rem;
-        }
-        
-        .refresh-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-active {
-            background: #4CAF50;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-        }
-        
-        .status-syncing {
-            background: #ff9800;
-            animation: pulse 1.5s infinite;
-        }
-        
-        .status-error {
-            background: #f44336;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: #666;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        
-        .stat-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: #1e3c72;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .data-table th {
-            background: #f8f9fa;
-            color: #1e3c72;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-        }
-        
-        .data-table tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .user-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
+
+        .title {
+            font-size: 30px;
+            font-weight: 700;
             margin-bottom: 8px;
         }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
+
+        .subtitle {
+            opacity: 0.95;
+            margin-bottom: 14px;
+        }
+
+        .controls {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            margin-right: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-        
-        .user-info {
-            flex: 1;
-        }
-        
-        .user-name {
-            font-weight: 500;
-            margin-bottom: 3px;
-        }
-        
-        .user-meta {
-            font-size: 0.8rem;
-            color: #666;
-        }
-        
-        .alert {
-            display: flex;
-            align-items: flex-start;
-            padding: 15px;
+
+        .btn {
+            border: none;
             border-radius: 8px;
-            margin-bottom: 15px;
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
         }
-        
-        .alert-error {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
+
+        .btn-primary {
+            background: #22c55e;
+            color: #052e16;
         }
-        
-        .alert-success {
-            background: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #1e3a8a;
         }
-        
-        .alert-warning {
-            background: #fff3cd;
-            border-color: #ffeaa7;
-            color: #856404;
+
+        .btn-danger {
+            background: #ef4444;
+            color: #ffffff;
         }
-        
-        .alert span {
-            font-size: 1.2rem;
-            margin-right: 10px;
-        }
-        
-        .bin-info {
-            background: #f8f9fa;
+
+        .content {
             padding: 20px;
-            border-radius: 10px;
-            font-size: 0.95rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
         }
-        
-        .bin-url {
-            color: #1e3c72;
-            text-decoration: none;
-            word-break: break-all;
-        }
-        
-        .bin-url:hover {
-            text-decoration: underline;
-        }
-        
-        .device-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            background: #e3f2fd;
-            color: #1976d2;
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            font-size: 0.8rem;
-            margin-right: 5px;
-            margin-bottom: 5px;
+            padding: 16px;
         }
-        
-        .timestamp {
-            font-size: 0.8rem;
-            color: #666;
+
+        .card.full {
+            grid-column: 1 / -1;
         }
-        
-        .data-container {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 10px;
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        .muted {
+            color: #64748b;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 4px 10px;
+            background: #e2e8f0;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #94a3b8;
+        }
+
+        .dot.ok {
+            background: #22c55e;
+        }
+
+        .dot.warn {
+            background: #f59e0b;
+        }
+
+        .dot.err {
+            background: #ef4444;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .stat {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f8fafc;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .kv {
+            line-height: 1.8;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            max-height: 440px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: #ffffff;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background: #f1f5f9;
+            z-index: 1;
+        }
+
+        .badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        @media (max-width: 960px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            .stats {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h1>
-                <span class="icon">📊</span>
-                跨设备鼠标轨迹监控仪表板
-            </h1>
-            <p>实时监控和分析来自不同设备的鼠标轨迹数据，数据存储在GitHub Gist中</p>
-            
-            <div class="dashboard-controls">
-                <button class="control-btn primary" onclick="loadAllData()">
-                    <span>🔄</span> 刷新数据
-                </button>
-                <button class="control-btn warning" onclick="clearLocalData()">
-                    <span>🗑️</span> 清空本地缓存
-                </button>
-                <button class="control-btn" onclick="showGistInfo()">
-                    <span>🔗</span> Gist信息
-                </button>
-                <button class="control-btn" onclick="exportData()">
-                    <span>📥</span> 导出数据
-                </button>
-                <button class="control-btn danger" onclick="resetSystem()">
-                    <span>⚠️</span> 重置系统
-                </button>
+    <div class="app">
+        <header class="header">
+            <h1 class="title">Cross-Device Trajectory Dashboard</h1>
+            <p class="subtitle">
+                Source: Supabase table <code>public.trajectory_points</code>. Auto refresh every 10s.
+            </p>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="loadAllData()">Refresh Now</button>
+                <button class="btn btn-secondary" onclick="exportData()">Export JSON</button>
+                <button class="btn btn-danger" onclick="clearLocalConfig()">Clear Local Config</button>
             </div>
-        </div>
-        
-        <div class="dashboard-content">
-            <!-- 左侧：统计数据 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">📈</span>
-                        系统统计
-                    </h3>
-                    <div class="refresh-indicator">
-                        <span class="status-indicator status-active" id="status-indicator"></span>
-                        <span id="refresh-status">实时更新</span>
-                    </div>
+        </header>
+
+        <main class="content">
+            <section class="card">
+                <div class="card-title">Overview</div>
+                <div class="stats" id="stats-grid"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Connection</div>
+                <p><span class="status"><span id="status-dot" class="dot"></span><span id="status-text">Idle</span></span></p>
+                <div class="kv muted" id="connection-kv" style="margin-top:10px"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Top Active Users</div>
+                <div id="users-box" class="muted">No data yet.</div>
+            </section>
+
+            <section class="card">
+                <div class="card-title">Runtime</div>
+                <div class="kv muted" id="runtime-kv"></div>
+            </section>
+
+            <section class="card full">
+                <div class="card-title">Recent Records</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Device</th>
+                                <th>Type</th>
+                                <th>Pos</th>
+                                <th>Page</th>
+                            </tr>
+                        </thead>
+                        <tbody id="records-body">
+                            <tr><td colspan="6" class="muted">Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-                
-                <div id="stats-container">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>正在加载统计数据...</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 右侧：用户列表 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">👥</span>
-                        活跃用户
-                    </h3>
-                    <span id="user-count">0</span> 用户
-                </div>
-                
-                <div id="users-container">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>正在加载用户数据...</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 全宽：轨迹数据 -->
-            <div class="dashboard-card full-width">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">📍</span>
-                        轨迹数据记录
-                    </h3>
-                    <div>
-                        <span id="record-count">0</span> 条记录
-                    </div>
-                </div>
-                
-                <div class="data-container" id="data-container">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>正在加载轨迹数据...</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 左侧：系统信息 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">⚙️</span>
-                        系统信息
-                    </h3>
-                </div>
-                
-                <div id="system-info">
-                    <div class="loading">
-                        <p>正在加载系统信息...</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 右侧：Gist信息 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <span class="card-icon">🔗</span>
-                        GitHub Gist存储
-                    </h3>
-                </div>
-                
-                <div id="gist-info">
-                    <div class="loading">
-                        <p>正在加载Gist信息...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
-    
+
     <script>
-        // 配置 - 使用GitHub Gist API
-        const CONFIG = {
-            // GitHub Gist配置
-            gistId: null, // 将从URL参数获取
-            fileName: 'cross-device-mouse-data.json',
-            gistApiUrl: 'https://api.github.com/gists',
-            
-            // 刷新间隔（毫秒）
-            refreshInterval: 10000, // 10秒刷新一次
-            
-            // 数据限制
-            maxRecords: 1000,
-            maxDisplayRecords: 50,
-            
-            // 版本
-            version: '1.0'
+        const DEFAULT_CONFIG = {
+            provider: "supabase",
+            supabaseUrl: "https://xmphfiybozqlnzbkddsl.supabase.co",
+            supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtcGhmaXlib3pxbG56YmtkZHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwOTI1NzYsImV4cCI6MjA5NDY2ODU3Nn0.ix7ZHCgTvsY6kspFqkSoz3Z4zeWACqis29a5fkJchm8",
+            refreshMs: 10000,
+            queryLimit: 1500,
+            tableName: "trajectory_points"
         };
-        
-        // 全局数据
-        let allData = [];
-        let users = new Set();
-        let devices = new Set();
-        let sessions = new Set();
+
+        const STORAGE_KEYS = {
+            provider: "ks_cloud_provider",
+            url: "ks_supabase_url",
+            key: "ks_supabase_anon_key"
+        };
+
+        let allRows = [];
         let refreshTimer = null;
-        let isRefreshing = false;
-        let lastUpdateTime = null;
-        
-        // 页面加载时初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 跨设备仪表板初始化 (GitHub Gist版)');
-            
-            // 尝试从URL获取Gist ID
-            const urlParams = new URLSearchParams(window.location.search);
-            const gistIdFromUrl = urlParams.get('gist');
-            
-            if (gistIdFromUrl) {
-                CONFIG.gistId = gistIdFromUrl;
-                localStorage.setItem('ks_cross_device_gist_id', gistIdFromUrl);
-                console.log('从URL获取Gist ID:', gistIdFromUrl);
-            } else {
-                // 尝试从localStorage加载
-                const savedGistId = localStorage.getItem('ks_cross_device_gist_id');
-                if (savedGistId) {
-                    CONFIG.gistId = savedGistId;
-                    console.log('从localStorage加载Gist ID:', savedGistId);
-                }
-            }
-            
-            // 加载所有数据
-            loadAllData();
-            
-            // 显示Gist信息
-            showGistInfo();
-            
-            // 启动自动刷新
-            startAutoRefresh();
-            
-            // 更新状态指示器
-            updateStatusIndicator();
-        });
-        
-        // 加载所有数据
-        async function loadAllData() {
-            if (isRefreshing) {
-                console.log('🔄 数据正在刷新中，跳过');
-                return;
-            }
-            
-            isRefreshing = true;
-            updateStatusIndicator();
-            
-            showLoading('stats-container', '正在加载统计数据...');
-            showLoading('users-container', '正在加载用户数据...');
-            showLoading('data-container', '正在加载轨迹数据...');
-            
+        let loading = false;
+        let lastUpdated = null;
+
+        function normalizeSupabaseBaseUrl(rawUrl) {
+            const value = (rawUrl || "").trim();
+            if (!value) return "";
+
             try {
-                if (!CONFIG.gistId) {
-                    showError('请先设置GitHub Gist ID');
-                    isRefreshing = false;
-                    updateStatusIndicator();
-                    return;
-                }
-                
-                console.log('🔄 从GitHub Gist加载数据，Gist ID:', CONFIG.gistId);
-                
-                const response = await fetch(
-                    `${CONFIG.gistApiUrl}/${CONFIG.gistId}`,
-                    {
-                        headers: {
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const gist = await response.json();
-                const content = gist.files[CONFIG.fileName]?.content;
-                
-                if (!content) {
-                    throw new Error('Gist中没有找到数据文件');
-                }
-                
-                allData = JSON.parse(content);
-                console.log('✅ 数据加载成功，记录数:', allData.length);
-                
-                // 分析数据
-                analyzeData();
-                
-                // 更新显示
-                updateStats();
-                updateUsers();
-                updateDataTable();
-                updateSystemInfo();
-                
-                lastUpdateTime = new Date();
-                
-            } catch (error) {
-                console.error('❌ 数据加载失败:', error);
-                showError(`加载数据失败: ${error.message}`);
-            } finally {
-                isRefreshing = false;
-                updateStatusIndicator();
+                const parsed = new URL(value);
+                parsed.hash = "";
+                parsed.search = "";
+                let path = parsed.pathname.replace(/\/+$/, "");
+                path = path.replace(/\/rest\/v1$/i, "");
+                parsed.pathname = path || "/";
+                return parsed.toString().replace(/\/$/, "");
+            } catch (_) {
+                return value
+                    .split("?")[0]
+                    .split("#")[0]
+                    .replace(/\/+$/, "")
+                    .replace(/\/rest\/v1$/i, "");
             }
         }
-        
-        // 分析数据
-        function analyzeData() {
-            // 清空之前的统计
-            users.clear();
-            devices.clear();
-            sessions.clear();
-            
-            // 分析每条记录
-            allData.forEach(record => {
-                if (record.userId) users.add(record.userId);
-                if (record.deviceId) devices.add(record.deviceId);
-                if (record.sessionId) sessions.add(record.sessionId);
-            });
-            
-            console.log('📊 数据分析完成:');
-            console.log('  - 用户数:', users.size);
-            console.log('  - 设备数:', devices.size);
-            console.log('  - 会话数:', sessions.size);
-            console.log('  - 总记录数:', allData.length);
-        }
-        
-        // 更新统计
-        function updateStats() {
-            const statsContainer = document.getElementById('stats-container');
-            if (!statsContainer) return;
-            
-            // 计算时间范围
-            let timeRange = '无数据';
-            if (allData.length > 0) {
-                const timestamps = allData.map(r => r.timestamp).filter(t => t);
-                if (timestamps.length > 0) {
-                    const minTime = Math.min(...timestamps);
-                    const maxTime = Math.max(...timestamps);
-                    const rangeHours = (maxTime - minTime) / (1000 * 60 * 60);
-                    
-                    if (rangeHours < 1) {
-                        timeRange = `${Math.round(rangeHours * 60)}分钟`;
-                    } else if (rangeHours < 24) {
-                        timeRange = `${Math.round(rangeHours)}小时`;
-                    } else {
-                        timeRange = `${Math.round(rangeHours / 24)}天`;
-                    }
-                }
+
+        function applyUrlConfig() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const provider = params.get("provider") || params.get("cloudProvider");
+                const supabaseUrl = params.get("supabaseUrl");
+                const supabaseKey = params.get("supabaseKey") || params.get("supabaseAnonKey");
+
+                if (provider) localStorage.setItem(STORAGE_KEYS.provider, provider.toLowerCase());
+                if (supabaseUrl) localStorage.setItem(STORAGE_KEYS.url, normalizeSupabaseBaseUrl(supabaseUrl));
+                if (supabaseKey) localStorage.setItem(STORAGE_KEYS.key, supabaseKey.trim());
+            } catch (err) {
+                console.warn("read URL config failed", err);
             }
-            
-            // 计算事件类型分布
-            const eventTypes = {};
-            allData.forEach(record => {
-                const type = record.type || 'unknown';
-                eventTypes[type] = (eventTypes[type] || 0) + 1;
-            });
-            
-            const mouseMoveCount = eventTypes['mouse_move'] || 0;
-            const mouseClickCount = eventTypes['mouse_click'] || 0;
-            
-            statsContainer.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value">${allData.length}</div>
-                        <div class="stat-label">总记录数</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${users.size}</div>
-                        <div class="stat-label">用户数</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${devices.size}</div>
-                        <div class="stat-label">设备数</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${sessions.size}</div>
-                        <div class="stat-label">会话数</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${mouseMoveCount}</div>
-                        <div class="stat-label">鼠标移动</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${mouseClickCount}</div>
-                        <div class="stat-label">鼠标点击</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${timeRange}</div>
-                        <div class="stat-label">时间范围</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${CONFIG.version}</div>
-                        <div class="stat-label">数据版本</div>
-                    </div>
-                </div>
-            `;
-            
-            // 更新记录数显示
-            document.getElementById('record-count').textContent = allData.length;
         }
-        
-        // 更新用户列表
-        function updateUsers() {
-            const usersContainer = document.getElementById('users-container');
-            if (!usersContainer) return;
-            
-            document.getElementById('user-count').textContent = users.size;
-            
-            if (users.size === 0) {
-                usersContainer.innerHTML = '<div class="alert alert-warning">暂无用户数据</div>';
+
+        function ensureDefaultConfig() {
+            if (!localStorage.getItem(STORAGE_KEYS.provider)) localStorage.setItem(STORAGE_KEYS.provider, DEFAULT_CONFIG.provider);
+            if (!localStorage.getItem(STORAGE_KEYS.url)) localStorage.setItem(STORAGE_KEYS.url, DEFAULT_CONFIG.supabaseUrl);
+            if (!localStorage.getItem(STORAGE_KEYS.key)) localStorage.setItem(STORAGE_KEYS.key, DEFAULT_CONFIG.supabaseAnonKey);
+        }
+
+        function getConfig() {
+            const provider = (localStorage.getItem(STORAGE_KEYS.provider) || DEFAULT_CONFIG.provider).toLowerCase();
+            const supabaseUrl = normalizeSupabaseBaseUrl(localStorage.getItem(STORAGE_KEYS.url) || DEFAULT_CONFIG.supabaseUrl);
+            const supabaseAnonKey = localStorage.getItem(STORAGE_KEYS.key) || DEFAULT_CONFIG.supabaseAnonKey;
+            return {
+                provider,
+                supabaseUrl,
+                supabaseAnonKey,
+                enabled: provider === "supabase" && !!supabaseUrl && !!supabaseAnonKey
+            };
+        }
+
+        function setStatus(kind, text) {
+            const dot = document.getElementById("status-dot");
+            const statusText = document.getElementById("status-text");
+            dot.className = "dot " + (kind || "");
+            statusText.textContent = text;
+        }
+
+        function showConnectionInfo(conf, extra) {
+            const box = document.getElementById("connection-kv");
+            const lines = [
+                "provider: " + conf.provider,
+                "supabaseUrl: " + conf.supabaseUrl,
+                "enabled: " + String(conf.enabled),
+                "lastUpdated: " + (lastUpdated ? lastUpdated.toLocaleString() : "never"),
+                "rows: " + allRows.length
+            ];
+            if (extra) lines.push(extra);
+            box.innerHTML = lines.map(function (x) { return "<div>" + escapeHtml(x) + "</div>"; }).join("");
+        }
+
+        async function loadAllData() {
+            if (loading) return;
+            const conf = getConfig();
+            showConnectionInfo(conf);
+
+            if (!conf.enabled) {
+                setStatus("warn", "Cloud config missing");
+                renderNoData("Cloud config missing. Set localStorage ks_supabase_url / ks_supabase_anon_key.");
                 return;
             }
-            
-            let html = '';
-            Array.from(users).slice(0, 10).forEach(userId => {
-                // 获取该用户的设备数
-                const userDevices = new Set();
-                const userSessions = new Set();
-                let lastActivity = null;
-                
-                allData.filter(r => r.userId === userId).forEach(record => {
-                    if (record.deviceId) userDevices.add(record.deviceId);
-                    if (record.sessionId) userSessions.add(record.sessionId);
-                    if (record.timestamp && (!lastActivity || record.timestamp > lastActivity)) {
-                        lastActivity = record.timestamp;
+
+            loading = true;
+            setStatus("warn", "Loading...");
+
+            try {
+                const endpoint = conf.supabaseUrl.replace(/\/$/, "") + "/rest/v1/" + DEFAULT_CONFIG.tableName;
+                const params = new URLSearchParams({
+                    select: "id,user_id,device_id,page_url,event_type,x,y,timestamp,created_at",
+                    order: "timestamp.desc",
+                    limit: String(DEFAULT_CONFIG.queryLimit)
+                });
+
+                const response = await fetch(endpoint + "?" + params.toString(), {
+                    method: "GET",
+                    headers: {
+                        apikey: conf.supabaseAnonKey,
+                        Authorization: "Bearer " + conf.supabaseAnonKey
                     }
                 });
-                
-                // 生成用户头像颜色
-                const colors = ['#667eea', '#764ba2', '#4CAF50', '#ff9800', '#f44336'];
-                const colorIndex = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-                
-                // 格式化最后活动时间
-                let lastActivityStr = '未知';
-                if (lastActivity) {
-                    const diff = Date.now() - lastActivity;
-                    if (diff < 60000) {
-                        lastActivityStr = '刚刚';
-                    } else if (diff < 3600000) {
-                        lastActivityStr = `${Math.floor(diff / 60000)}分钟前`;
-                    } else if (diff < 86400000) {
-                        lastActivityStr = `${Math.floor(diff / 3600000)}小时前`;
-                    } else {
-                        lastActivityStr = `${Math.floor(diff / 86400000)}天前`;
-                    }
+
+                if (!response.ok) {
+                    const detail = await response.text();
+                    throw new Error("Supabase query failed: " + response.status + " " + detail);
                 }
-                
-                html += `
-                    <div class="user-item">
-                        <div class="user-avatar" style="background: ${colors[colorIndex]}">
-                            ${userId.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name">${userId.substring(0, 12)}...</div>
-                            <div class="user-meta">
-                                设备: ${userDevices.size} | 会话: ${userSessions.size} | 最后活动: ${lastActivityStr}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            if (users.size > 10) {
-                html += `<div style="text-align: center; color: #666; margin-top: 10px;">... 还有 ${users.size - 10} 个用户</div>`;
+
+                const rows = await response.json();
+                if (!Array.isArray(rows)) {
+                    throw new Error("Supabase response is not an array");
+                }
+
+                allRows = rows;
+                lastUpdated = new Date();
+                setStatus("ok", "Connected");
+                showConnectionInfo(conf);
+                renderAll();
+            } catch (err) {
+                setStatus("err", "Load failed");
+                showConnectionInfo(conf, "error: " + err.message);
+                renderNoData("Failed to load: " + err.message);
+            } finally {
+                loading = false;
+                renderRuntime();
             }
-            
-            usersContainer.innerHTML = html;
         }
-        
-        // 更新数据表格
-        function updateDataTable() {
-            const dataContainer = document.getElementById('data-container');
-            if (!dataContainer) return;
-            
-            if (allData.length === 0) {
-                dataContainer.innerHTML = '<div class="alert alert-warning">暂无轨迹数据</div>';
+
+        function renderAll() {
+            renderStats();
+            renderUsers();
+            renderTable();
+            renderRuntime();
+        }
+
+        function renderStats() {
+            const total = allRows.length;
+            const users = new Set();
+            const devices = new Set();
+            let moves = 0;
+            let clicks = 0;
+            let scrolls = 0;
+
+            allRows.forEach(function (r) {
+                if (r.user_id) users.add(r.user_id);
+                if (r.device_id) devices.add(r.device_id);
+                if (r.event_type === "mousemove") moves += 1;
+                else if (r.event_type === "mousedown") clicks += 1;
+                else if (r.event_type === "scroll") scrolls += 1;
+            });
+
+            const stats = [
+                { label: "Records", value: total },
+                { label: "Users", value: users.size },
+                { label: "Devices", value: devices.size },
+                { label: "Moves", value: moves },
+                { label: "Clicks", value: clicks },
+                { label: "Scrolls", value: scrolls },
+                { label: "Refresh(s)", value: DEFAULT_CONFIG.refreshMs / 1000 },
+                { label: "Table", value: "trajectory_points" }
+            ];
+
+            const grid = document.getElementById("stats-grid");
+            grid.innerHTML = stats.map(function (s) {
+                return (
+                    '<div class="stat">' +
+                        '<div class="stat-value">' + escapeHtml(String(s.value)) + "</div>" +
+                        '<div class="stat-label">' + escapeHtml(s.label) + "</div>" +
+                    "</div>"
+                );
+            }).join("");
+        }
+
+        function renderUsers() {
+            const box = document.getElementById("users-box");
+            if (!allRows.length) {
+                box.textContent = "No data yet.";
                 return;
             }
-            
-            // 获取最近的记录（按时间倒序）
-            const recentData = [...allData]
-                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-                .slice(0, CONFIG.maxDisplayRecords);
-            
-            let html = `
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>用户</th>
-                            <th>设备</th>
-                            <th>类型</th>
-                            <th>位置</th>
-                            <th>页面</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            recentData.forEach(record => {
-                // 格式化时间
-                let timeStr = '未知';
-                if (record.timestamp) {
-                    const date = new Date(record.timestamp);
-                    timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const map = new Map();
+            allRows.forEach(function (r) {
+                const key = r.user_id || "unknown_user";
+                if (!map.has(key)) {
+                    map.set(key, { user: key, count: 0, devices: new Set(), last: 0 });
                 }
-                
-                // 格式化用户和设备ID（缩短显示）
-                const userIdShort = record.userId ? record.userId.substring(0, 8) + '...' : '未知';
-                const deviceIdShort = record.deviceId ? record.deviceId.substring(0, 8) + '...' : '未知';
-                
-                // 事件类型显示
-                let typeEmoji = '❓';
-                let typeText = record.type || 'unknown';
-                if (typeText.includes('move')) {
-                    typeEmoji = '🖱️';
-                    typeText = '移动';
-                } else if (typeText.includes('click')) {
-                    typeEmoji = '👆';
-                    typeText = '点击';
-                }
-                
-                // 位置信息
-                const position = record.x !== undefined && record.y !== undefined 
-                    ? `(${Math.round(record.x)}, ${Math.round(record.y)})` 
-                    : '未知';
-                
-                // 页面信息（缩短URL）
-                let pageInfo = '未知';
-                if (record.url) {
-                    try {
-                        const url = new URL(record.url);
-                        pageInfo = url.hostname + url.pathname.substring(0, 20);
-                        if (url.pathname.length > 20) pageInfo += '...';
-                    } catch {
-                        pageInfo = record.url.substring(0, 30);
-                        if (record.url.length > 30) pageInfo += '...';
-                    }
-                }
-                
-                html += `
-                    <tr>
-                        <td class="timestamp">${timeStr}</td>
-                        <td>${userIdShort}</td>
-                        <td><span class="device-badge">${deviceIdShort}</span></td>
-                        <td>${typeEmoji} ${typeText}</td>
-                        <td>${position}</td>
-                        <td title="${record.url || ''}">${pageInfo}</td>
-                    </tr>
-                `;
+                const item = map.get(key);
+                item.count += 1;
+                if (r.device_id) item.devices.add(r.device_id);
+                if (r.timestamp && Number(r.timestamp) > item.last) item.last = Number(r.timestamp);
             });
-            
-            html += `
-                    </tbody>
-                </table>
-                <div style="margin-top: 10px; text-align: center; color: #666; font-size: 0.9rem;">
-                    显示最近 ${recentData.length} 条记录，共 ${allData.length} 条记录
-                </div>
-            `;
-            
-            dataContainer.innerHTML = html;
+
+            const arr = Array.from(map.values()).sort(function (a, b) { return b.count - a.count; }).slice(0, 10);
+            box.innerHTML = arr.map(function (u) {
+                const lastText = u.last ? new Date(u.last).toLocaleString() : "n/a";
+                return (
+                    "<div style=\"padding:8px 0;border-bottom:1px solid #e2e8f0\">" +
+                        "<div><strong>" + escapeHtml(shortId(u.user)) + "</strong> " +
+                        "<span class=\"badge\">records: " + u.count + "</span></div>" +
+                        "<div class=\"muted\">devices: " + u.devices.size + " | last: " + escapeHtml(lastText) + "</div>" +
+                    "</div>"
+                );
+            }).join("");
         }
-        
-        // 更新系统信息
-        function updateSystemInfo() {
-            const systemInfo = document.getElementById('system-info');
-            if (!systemInfo) return;
-            
-            let lastUpdateStr = '从未更新';
-            if (lastUpdateTime) {
-                const diff = Date.now() - lastUpdateTime.getTime();
-                if (diff < 1000) {
-                    lastUpdateStr = '刚刚';
-                } else if (diff < 60000) {
-                    lastUpdateStr = `${Math.floor(diff / 1000)}秒前`;
-                } else {
-                    lastUpdateStr = lastUpdateTime.toLocaleTimeString();
-                }
-            }
-            
-            systemInfo.innerHTML = `
-                <div class="bin-info">
-                    <div style="margin-bottom: 10px;">
-                        <strong>Gist ID:</strong> ${CONFIG.gistId || '未设置'}
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>数据文件:</strong> ${CONFIG.fileName}
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>最后更新:</strong> ${lastUpdateStr}
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>刷新间隔:</strong> ${CONFIG.refreshInterval / 1000}秒
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>数据版本:</strong> ${CONFIG.version}
-                    </div>
-                    <div>
-                        <strong>状态:</strong> 
-                        <span class="status-indicator ${isRefreshing ? 'status-syncing' : 'status-active'}"></span>
-                        ${isRefreshing ? '同步中...' : '已连接'}
-                    </div>
-                </div>
-            `;
-        }
-        
-        // 显示Gist信息
-        function showGistInfo() {
-            const gistInfo = document.getElementById('gist-info');
-            if (!gistInfo) return;
-            
-            if (!CONFIG.gistId) {
-                gistInfo.innerHTML = `
-                    <div class="alert alert-warning">
-                        <span>🔗</span>
-                        <div>
-                            <strong>未设置GitHub Gist ID</strong>
-                            <p>请从URL参数获取或手动设置</p>
-                            <div style="margin-top: 10px;">
-                                <input type="text" id="gist-id-input" placeholder="输入GitHub Gist ID" 
-                                       style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;"
-                                       value="00ba9f14d58502d1c1fd57557926eb9b">
-                                <button onclick="setGistId()" 
-                                        style="margin-top: 10px; padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
-                                    设置Gist ID
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+
+        function renderTable() {
+            const body = document.getElementById("records-body");
+            if (!allRows.length) {
+                body.innerHTML = "<tr><td colspan=\"6\" class=\"muted\">No rows.</td></tr>";
                 return;
             }
-            
-            const gistUrl = `https://gist.github.com/helloliying/${CONFIG.gistId}`;
-            const apiUrl = `${CONFIG.gistApiUrl}/${CONFIG.gistId}`;
-            
-            gistInfo.innerHTML = `
-                <div class="bin-info">
-                    <div style="margin-bottom: 10px;">
-                        <strong>Gist ID:</strong> ${CONFIG.gistId}
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>数据量:</strong> ${allData.length} 条记录
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>查看URL:</strong> 
-                        <a href="${gistUrl}" target="_blank" class="bin-url">${gistUrl}</a>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>API URL:</strong> 
-                        <span style="font-size: 0.9rem;">${apiUrl}</span>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>数据文件:</strong> ${CONFIG.fileName}
-                    </div>
-                    <div>
-                        <strong>状态:</strong> 
-                        <span class="status-indicator ${isRefreshing ? 'status-syncing' : 'status-active'}"></span>
-                        ${isRefreshing ? '同步中...' : '已连接'}
-                    </div>
-                </div>
-            `;
+
+            const rows = allRows.slice(0, 120);
+            body.innerHTML = rows.map(function (r) {
+                const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : "n/a";
+                const pos = (isNum(r.x) && isNum(r.y)) ? "(" + Math.round(Number(r.x)) + ", " + Math.round(Number(r.y)) + ")" : "-";
+                const page = simplifyUrl(r.page_url);
+                return (
+                    "<tr>" +
+                        "<td>" + escapeHtml(ts) + "</td>" +
+                        "<td>" + escapeHtml(shortId(r.user_id)) + "</td>" +
+                        "<td>" + escapeHtml(shortId(r.device_id)) + "</td>" +
+                        "<td>" + escapeHtml(r.event_type || "-") + "</td>" +
+                        "<td>" + escapeHtml(pos) + "</td>" +
+                        "<td title=\"" + escapeHtml(r.page_url || "") + "\">" + escapeHtml(page) + "</td>" +
+                    "</tr>"
+                );
+            }).join("");
         }
-        
-        // 设置Gist ID
-        function setGistId() {
-            const input = document.getElementById('gist-id-input');
-            if (input && input.value) {
-                CONFIG.gistId = input.value.trim();
-                localStorage.setItem('ks_cross_device_gist_id', input.value.trim());
-                showAlert('Gist ID已设置', 'success');
-                loadAllData();
-                showGistInfo();
-            }
+
+        function renderRuntime() {
+            const box = document.getElementById("runtime-kv");
+            const lines = [
+                "auto refresh(ms): " + DEFAULT_CONFIG.refreshMs,
+                "query limit: " + DEFAULT_CONFIG.queryLimit,
+                "current rows in memory: " + allRows.length,
+                "last updated: " + (lastUpdated ? lastUpdated.toLocaleString() : "never")
+            ];
+            box.innerHTML = lines.map(function (x) { return "<div>" + escapeHtml(x) + "</div>"; }).join("");
         }
-        
-        // 启动自动刷新
-        function startAutoRefresh() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-            }
-            
-            refreshTimer = setInterval(() => {
-                if (!isRefreshing) {
-                    loadAllData();
-                }
-            }, CONFIG.refreshInterval);
-            
-            console.log('⏰ 自动刷新已启动，间隔:', CONFIG.refreshInterval / 1000, '秒');
+
+        function renderNoData(message) {
+            document.getElementById("stats-grid").innerHTML = "";
+            document.getElementById("users-box").textContent = message;
+            document.getElementById("records-body").innerHTML = "<tr><td colspan=\"6\" class=\"muted\">" + escapeHtml(message) + "</td></tr>";
+            renderRuntime();
         }
-        
-        // 更新状态指示器
-        function updateStatusIndicator() {
-            const indicator = document.getElementById('status-indicator');
-            const statusText = document.getElementById('refresh-status');
-            
-            if (!indicator || !statusText) return;
-            
-            if (isRefreshing) {
-                indicator.className = 'status-indicator status-syncing';
-                statusText.textContent = '同步中...';
-            } else {
-                indicator.className = 'status-indicator status-active';
-                statusText.textContent = lastUpdateTime 
-                    ? `最后更新: ${lastUpdateTime.toLocaleTimeString()}`
-                    : '实时更新';
-            }
-        }
-        
-        // 清空本地缓存
-        function clearLocalData() {
-            if (confirm('确定要清空本地缓存吗？这不会删除Gist中的数据。')) {
-                localStorage.removeItem('ks_cross_device_gist_id');
-                CONFIG.gistId = null;
-                allData = [];
-                users.clear();
-                devices.clear();
-                sessions.clear();
-                
-                updateStats();
-                updateUsers();
-                updateDataTable();
-                showGistInfo();
-                
-                showAlert('本地缓存已清空', 'success');
-            }
-        }
-        
-        // 导出数据
+
         function exportData() {
-            const dataStr = JSON.stringify(allData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
-            const url = URL.createObjectURL(dataBlob);
-            const a = document.createElement('a');
+            const blob = new Blob([JSON.stringify(allRows, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
             a.href = url;
-            a.download = `cross-device-mouse-data-${new Date().toISOString().slice(0, 10)}.json`;
+            a.download = "supabase-trajectory-" + new Date().toISOString().slice(0, 19).replace(/:/g, "-") + ".json";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
-            showAlert(`已导出 ${allData.length} 条记录`, 'success');
         }
-        
-        // 重置系统
-        function resetSystem() {
-            if (confirm('确定要重置系统吗？这将清空所有本地数据。')) {
-                localStorage.clear();
-                location.reload();
+
+        function clearLocalConfig() {
+            if (!confirm("Clear local cloud config in this browser?")) return;
+            localStorage.removeItem(STORAGE_KEYS.provider);
+            localStorage.removeItem(STORAGE_KEYS.url);
+            localStorage.removeItem(STORAGE_KEYS.key);
+            ensureDefaultConfig();
+            loadAllData();
+        }
+
+        function simplifyUrl(url) {
+            if (!url) return "-";
+            try {
+                const u = new URL(url);
+                const text = u.hostname + u.pathname;
+                return text.length > 40 ? text.slice(0, 40) + "..." : text;
+            } catch (_) {
+                return String(url).slice(0, 40);
             }
         }
-        
-        // 工具函数：显示加载状态
-        function showLoading(containerId, message) {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = `
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>${message}</p>
-                    </div>
-                `;
-            }
+
+        function shortId(v) {
+            const x = String(v || "-");
+            return x.length > 18 ? x.slice(0, 8) + "..." + x.slice(-6) : x;
         }
-        
-        // 工具函数：显示错误
-        function showError(message) {
-            const statsContainer = document.getElementById('stats-container');
-            if (statsContainer) {
-                statsContainer.innerHTML = `
-                    <div class="alert alert-error">
-                        <span>❌</span>
-                        <div>
-                            <strong>错误</strong>
-                            <p>${message}</p>
+
+        function isNum(v) {
+            return v !== null && v !== undefined && Number.isFinite(Number(v));
+        }
+
+        function escapeHtml(v) {
+            return String(v)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            ensureDefaultConfig();
+            applyUrlConfig();
+            loadAllData();
+            refreshTimer = setInterval(loadAllData, DEFAULT_CONFIG.refreshMs);
+        });
+
+        window.addEventListener("beforeunload", function () {
+            if (refreshTimer) clearInterval(refreshTimer);
+        });
+    </script>
+</body>
+</html>
